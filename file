@@ -1,0 +1,46 @@
+logistics-visual-system/  # 项目根目录
+├── frontend/             # 前端（Vue3+可视化）
+│   ├── node_modules/     # 依赖包（安装后自动生成）
+│   ├── public/           # 静态资源（新增地图JSON）
+│   │   └── map/          # 新增：地图资源目录
+│   │       └── china.json # 新增：Echarts中国地图JSON
+│   ├── src/
+│   │   ├── api/          # 接口请求封装（已扩展）
+│   │   │   └── index.js  # 修改：新增调度/仓储接口封装
+│   │   ├── components/   # 可视化组件（已扩展）
+│   │   │   └── EchartsChart.vue  # 修改：新增轨迹地图分支
+│   │   ├── router/       # 路由配置（已扩展）
+│   │   │   └── index.js  # 修改：新增子路由（运力调度/轨迹/出入库/库存监控）
+│   │   ├── stores/       # Pinia状态管理（已扩展）
+│   │   │   └── dataStore.js  # 修改：新增调度/仓储全局状态
+│   │   ├── views/        # 页面视图（核心新增/修改）
+│   │   │   ├── dispatcher/  # 新增：调度员子页面目录
+│   │   │   │   ├── CapacityDispatch.vue  # 新增：运力调度面板
+│   │   │   │   └── TransportTrack.vue    # 新增：运输轨迹监控
+│   │   │   ├── warehouse/   # 新增：仓储员子页面目录
+│   │   │   │   ├── InOutRegister.vue     # 新增：出入库登记
+│   │   │   │   └── StockMonitor.vue      # 新增：库存监控预警
+│   │   │   ├── DispatcherView.vue        # 修改：新增子路由出口
+│   │   │   ├── WarehouseView.vue         # 修改：新增子路由出口
+│   │   │   └── ManagerView.vue           # 无修改：保持原有逻辑
+│   │   ├── App.vue       # 根组件（修改：新增菜单+权限控制）
+│   │   └── main.js       # 入口文件（无修改）
+│   ├── index.html        # HTML入口（无修改）
+│   ├── package.json      # 前端依赖配置（无修改，如需地图可新增echarts/map依赖）
+│   └── vite.config.js    # Vite配置（无修改）
+├── backend/              # 后端（Express+MySQL）
+│   ├── node_modules/     # 依赖包（安装后自动生成）
+│   ├── config/           # 配置文件（已扩展）
+│   │   └── db.js         # 修改：新增车辆/轨迹/库存表的SQL语句
+│   ├── controllers/      # 接口逻辑（已扩展）
+│   │   └── visualController.js  # 修改：新增调度/仓储接口逻辑
+│   ├── models/           # 新增：数据模型目录
+│   │   ├── VehicleModel.js   # 新增：车辆/运单数据模型
+│   │   ├── TrackModel.js     # 新增：运输轨迹数据模型
+│   │   └── StockModel.js     # 新增：库存/出入库数据模型
+│   ├── routes/           # 路由定义（已扩展）
+│   │   └── visualRoutes.js      # 修改：新增调度/仓储路由
+│   ├── app.js            # 后端入口（无修改，仅需引入新增路由）
+│   ├── package.json      # 后端依赖配置（无修改）
+│   └── test-data.sql     # MySQL测试数据脚本（修改：新增调度/仓储测试数据）
+└── README.md             # 项目说明（可选，可补充新功能说明）
