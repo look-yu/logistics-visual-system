@@ -308,7 +308,6 @@ const submitAllocate = async () => {
   }
 }
 
-// 移除：原有exportExcel方法（ExportButton内部调用ExcelDownload.js处理）
 
 // 原有：页面加载时获取数据
 onMounted(() => {

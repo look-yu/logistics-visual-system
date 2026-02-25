@@ -5,6 +5,12 @@
       <h2>调度人员运输数据大屏</h2>
       <el-divider direction="vertical" style="height: 24px;"></el-divider> <!-- 修复：显式闭合标签 -->
       <span class="date-text">{{ currentDate }}</span>
+      <!-- 新增：全局导出按钮 -->
+      <ExportButton 
+        style="margin-left: 20px;"
+        buttonText="导出今日数据大屏"
+        @click="handleExportAllData" 
+      />
     </div>
 
     <!-- 核心指标（保留原有，修改为动态数据） -->
@@ -56,6 +62,12 @@
         <el-card shadow="hover">
           <template #header>
             <span class="chart-title">车辆状态监控</span>
+            <!-- 新增：车辆状态导出按钮 -->
+            <ExportButton 
+              style="margin-left: 10px;"
+              buttonText="导出车辆状态"
+              @click="handleExportCarStatus" 
+            />
           </template>
           <el-table :data="carStatusList" border size="small">
             <el-table-column prop="carNo" label="车牌号" width="120"></el-table-column> <!-- 修复：显式闭合 -->
@@ -77,6 +89,12 @@
         <el-card shadow="hover">
           <template #header>
             <span class="chart-title">待分配运单</span>
+            <!-- 新增：待分配运单导出按钮 -->
+            <ExportButton 
+              style="margin-left: 10px;"
+              buttonText="导出待分配运单"
+              @click="handleExportWaitOrder" 
+            />
           </template>
           <el-table :data="waitAllocateOrderList" border size="small">
             <el-table-column prop="orderNo" label="订单号" width="180"></el-table-column> <!-- 修复：显式闭合 -->
@@ -113,6 +131,9 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import EchartsChart from '../components/EchartsChart.vue'
 import { ArrowUp, ArrowDown } from '@element-plus/icons-vue'
+// 新增：导入导出按钮组件和导出工具类
+import ExportButton from '../components/ExportButton.vue' 
+import { downloadExcel } from '../utils/ExcelDownload.js' 
 
 // 保留原有变量
 const currentDate = ref(new Date().toLocaleDateString())
@@ -132,6 +153,51 @@ const timeSlotYData = ref([85, 162, 110])
 // 新增：调度员专属数据列表
 const carStatusList = ref([])
 const waitAllocateOrderList = ref([])
+
+// 新增：导出全部数据方法
+const handleExportAllData = async () => {
+  const params = {
+    role: 'dispatcher',
+    date: currentDate.value,
+    type: 'all'
+  }
+  await downloadExcel({
+    url: '/api/export/dispatcher',
+    params,
+    fileName: `调度员数据大屏_${currentDate.value}.xlsx`,
+    emptyTip: '暂无可导出的调度员数据'
+  })
+}
+
+// 新增：导出车辆状态数据方法
+const handleExportCarStatus = async () => {
+  const params = {
+    role: 'dispatcher',
+    date: currentDate.value,
+    type: 'carStatus'
+  }
+  await downloadExcel({
+    url: '/api/export/dispatcher',
+    params,
+    fileName: `车辆状态监控_${currentDate.value}.xlsx`,
+    emptyTip: '暂无可导出的车辆状态数据'
+  })
+}
+
+// 新增：导出待分配运单数据方法
+const handleExportWaitOrder = async () => {
+  const params = {
+    role: 'dispatcher',
+    date: currentDate.value,
+    type: 'waitOrder'
+  }
+  await downloadExcel({
+    url: '/api/export/dispatcher',
+    params,
+    fileName: `待分配运单_${currentDate.value}.xlsx`,
+    emptyTip: '暂无可导出的待分配运单数据'
+  })
+}
 
 // 新增：请求后端数据方法（核心修复：错误捕获+数据判空+接口容错）
 const fetchDispatcherData = async () => {

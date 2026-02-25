@@ -1,4 +1,4 @@
-// 导入axios（确保项目已安装：npm install axios）
+// ===================== 新增1：导入axios并封装请求（独立模块，不影响路由） =====================
 import axios from 'axios'
 
 // 1. 创建axios实例，适配项目基础配置（和其他代码统一请求基准地址）
@@ -89,4 +89,101 @@ export const dispatchApi = {
 }
 
 // 6. 导出通用请求实例（方便其他自定义接口复用拦截器配置）
-export default request
+export { request }
+
+// ===================== 原有路由逻辑（仅补充运力调度面板+角色权限，不修改原有） =====================
+import { createRouter, createWebHistory } from 'vue-router'
+import DispatcherView from '../views/DispatcherView.vue'
+import WarehouseView from '../views/WarehouseView.vue'
+import ManagerView from '../views/ManagerView.vue'
+// 新增2：导入运力调度面板组件（确保路径和你实际文件一致）
+import CapacityDispatch from '../views/CapacityDispatch.vue'
+
+const routes = [
+  { path: '/', redirect: '/manager' },
+  // 调度人员视图 - 补充角色权限meta（不修改原有逻辑，仅加roles）
+  { 
+    path: '/dispatcher', 
+    name: 'Dispatcher', 
+    component: DispatcherView, 
+    meta: { 
+      title: '调度人员视图',
+      roles: ['dispatcher'] // 仅调度人员可访问
+    } 
+  },
+  // 仓储管理员视图 - 补充角色权限meta（不修改原有逻辑，仅加roles）
+  { 
+    path: '/warehouse', 
+    name: 'Warehouse', 
+    component: WarehouseView, 
+    meta: { 
+      title: '仓储管理员视图',
+      roles: ['warehouse'] // 仅仓储管理员可访问
+    } 
+  },
+  // 管理层视图 - 补充角色权限meta（不修改原有逻辑，仅加roles）
+  { 
+    path: '/manager', 
+    name: 'Manager', 
+    component: ManagerView, 
+    meta: { 
+      title: '管理层视图',
+      roles: ['manager'] // 仅管理层可访问
+    } 
+  },
+  // 新增3：运力调度面板路由（独立页面，不影响原有路由）
+  { 
+    path: '/capacity-dispatch', 
+    name: 'CapacityDispatch', 
+    component: CapacityDispatch, 
+    meta: { 
+      title: '运力调度面板',
+      roles: ['dispatcher', 'manager'] // 调度人员+管理层可访问，仓储管理员不可
+    } 
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes
+})
+
+// 新增4：角色权限路由守卫（核心：控制不同角色访问对应页面，不冲突原有守卫）
+router.beforeEach((to, from, next) => {
+  // 1. 原有标题设置逻辑（完全保留，不修改）
+  if (to.meta && to.meta.title) {
+    document.title = `${to.meta.title} - 物流管理数据可视化系统`
+  } else {
+    document.title = '物流管理数据可视化系统'
+  }
+
+  // 2. 新增角色权限校验逻辑（兼容无roles的路由，不影响原有页面访问）
+  const hasRoles = to.meta && to.meta.roles && to.meta.roles.length > 0
+  if (!hasRoles) {
+    // 无角色限制的路由，直接放行
+    next()
+    return
+  }
+
+  // 获取当前登录角色（从localStorage读取，适配你的角色切换逻辑）
+  const currentRole = localStorage.getItem('currentRole') || 'manager' // 默认管理层
+  if (to.meta.roles.includes(currentRole)) {
+    // 角色匹配，放行
+    next()
+  } else {
+    // 角色不匹配，跳转到对应角色的默认页面
+    if (currentRole === 'dispatcher') {
+      next('/dispatcher')
+    } else if (currentRole === 'warehouse') {
+      next('/warehouse')
+    } else {
+      next('/manager')
+    }
+    // 提示无权限（可选，根据需要开启）
+    if (window.ElMessage) {
+      window.ElMessage.warning(`无权限访问【${to.meta.title}】，已跳转到您的角色专属页面`)
+    }
+  }
+})
+
+export default router

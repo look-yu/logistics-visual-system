@@ -1,24 +1,22 @@
-
 <template>
+  <!-- 修复1：清理冗余DOM嵌套，统一包裹容器 -->
+  <div class="echarts-chart-wrapper" style="width: 100%; height: 100%;">
+    <!-- 保留核心图表容器，点击事件+指针样式 -->
+    <div 
+      ref="chartRef" 
+      id="echarts-container" 
+      style="width: 100%; height: 100%; cursor: pointer;"
+      @click="openFullscreen"
+    ></div>
 
-  <!-- 保留原有id和样式，仅调整高度适配轨迹地图 -->
-  <!-- 新增：点击事件 + 鼠标指针样式 -->
-  <div 
-    ref="chartRef" 
-    id="echarts-container" 
-    style="width: 100%; height: 100%; cursor: pointer;"
-    @click="openFullscreen"
-  ></div>
-
-  <!-- 新增：图表放大弹窗 -->
-   
-  <div> <!-- 包裹整个组件内容 -->
+    <!-- 图表放大弹窗 -->
     <el-dialog 
       v-model="fullscreenVisible" 
       title="图表详情" 
       width="90%" 
       :close-on-click-modal="false"
       destroy-on-close
+      @closed="handleDialogClosed" 
     >
       <div 
         ref="fullscreenChartRef" 
@@ -27,275 +25,352 @@
       ></div>
     </el-dialog>
   </div>
-
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue' // 新增：nextTick
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
-// 新增：引入中国地图JSON（路径匹配你项目树的public/map/china.json）
-import chinaJson from '@/../public/map/china.json'
+// 引入中国地图JSON（路径匹配项目public/map/china.json）
+import chinaJson from '@/map/china.json';  // @ = src 根目录
+echarts.registerMap('china', chinaJson);
 
+// 修复2：完善props类型校验，增加容错默认值
 const props = defineProps({
-  role: { type: String, default: 'manager' },
+  role: { 
+    type: String, 
+    default: 'manager',
+    validator: (val) => ['manager', 'dispatcher', 'warehouse', 'track'].includes(val) // 限制角色类型
+  },
   title: { type: String, default: '物流数据可视化' },
-  xAxisData: { type: Array, default: () => ['1月', '2月', '3月', '4月'] },
-  seriesData: { type: Array, default: () => [1200, 1580, 1820, 2150] },
-  // 新增：轨迹点props，适配TransportTrack.vue的轨迹渲染
-  trackPoints: { type: Array, default: () => [] }
+  xAxisData: { type: Array, default: () => [] },
+  seriesData: { type: Array, default: () => [] },
+  // 完善trackPoints类型校验，定义结构
+  trackPoints: { 
+    type: Array, 
+    default: () => [],
+    validator: (val) => {
+      return val.every(item => {
+        return item && (item.fromCoord || item.toCoord) // 至少有起点/终点坐标
+      })
+    }
+  }
 })
 
-// 新增：定义错误事件，适配TransportTrack.vue的错误捕获
+// 定义错误事件，适配父组件错误捕获
 const emit = defineEmits(['chart-error'])
 
+// 修复3：用ref管理图表实例（更符合Vue3规范）
 const chartRef = ref(null)
-let myChart = null
+const myChart = ref(null)
+const fullscreenVisible = ref(false)
+const fullscreenChartRef = ref(null)
+const fullscreenChart = ref(null)
 
-// 新增：全屏图表相关变量
-const fullscreenVisible = ref(false) // 弹窗显示状态
-const fullscreenChartRef = ref(null) // 全屏图表容器
-let fullscreenChart = null // 全屏图表实例
+// 修复4：地图只注册一次，避免重复警告
+let mapRegistered = false
+const registerMapIfNeeded = () => {
+  if (props.role === 'track' && !mapRegistered) {
+    echarts.registerMap('china', chinaJson)
+    mapRegistered = true
+  }
+}
 
-// 保留原有初始化逻辑，仅新增track分支的地图注册
+// 修复5：封装resize处理函数，方便移除监听
+const handleResize = () => {
+  if (myChart.value) myChart.value.resize()
+  if (fullscreenChart.value) fullscreenChart.value.resize()
+}
+
+// 核心：初始化普通图表
 const initChart = () => {
-  if (myChart) {
-    myChart.dispose() // 保留原有销毁逻辑
+  // 先销毁旧实例
+  if (myChart.value) {
+    myChart.value.dispose()
+    myChart.value = null
   }
   if (!chartRef.value) return
   
   try {
-    myChart = echarts.init(chartRef.value)
-    // 新增：如果是轨迹地图，先注册中国地图
-    if (props.role === 'track') {
-      echarts.registerMap('china', chinaJson)
-    }
-    updateChart(myChart) // 修改：传入图表实例
+    myChart.value = echarts.init(chartRef.value)
+    registerMapIfNeeded() // 按需注册地图
+    updateChart(myChart.value)
   } catch (err) {
-    // 新增：捕获初始化错误，抛出给父组件
     emit('chart-error', err)
     console.error('图表初始化失败：', err)
   }
 }
 
-// 新增：初始化全屏图表（复用原有配置逻辑）
+// 初始化全屏图表
 const initFullscreenChart = () => {
-  if (fullscreenChart) {
-    fullscreenChart.dispose() // 销毁旧实例
+  if (fullscreenChart.value) {
+    fullscreenChart.value.dispose()
+    fullscreenChart.value = null
   }
   if (!fullscreenChartRef.value) return
   
   try {
-    fullscreenChart = echarts.init(fullscreenChartRef.value)
-    if (props.role === 'track') {
-      echarts.registerMap('china', chinaJson)
-    }
-    updateChart(fullscreenChart) // 复用更新逻辑
+    fullscreenChart.value = echarts.init(fullscreenChartRef.value)
+    registerMapIfNeeded()
+    updateChart(fullscreenChart.value)
   } catch (err) {
     console.error('全屏图表初始化失败：', err)
   }
 }
 
-// 修改：接收图表实例参数，适配普通/全屏图表
+// 修复6：增加无数据兜底，完善track分支容错
 const updateChart = (chartInstance) => {
+  if (!chartInstance) return
+
+  // 通用无数据配置
+  const noDataOption = {
+    title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
+    graphic: [{
+      type: 'text',
+      left: 'center',
+      top: '50%',
+      style: {
+        text: '暂无数据',
+        fontSize: 16,
+        color: '#999'
+      }
+    }]
+  }
+
   let option = {}
   
-  // 保留原有manager分支（折线图）
+  // 管理层：折线图（增加无数据兜底）
   if (props.role === 'manager') {
-    option = {
-      title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
-      tooltip: { trigger: 'axis' },
-      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-      xAxis: { type: 'category', data: props.xAxisData, axisLabel: { color: '#666' } },
-      yAxis: { type: 'value', axisLabel: { color: '#666' } },
-      series: [{
-        name: '订单量',
-        type: 'line',
-        data: props.seriesData,
-        smooth: true,
-        itemStyle: { color: '#1989fa' },
-        areaStyle: { 
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(25, 137, 250, 0.3)' },
-            { offset: 1, color: 'rgba(25, 137, 250, 0.0)' }
-          ])
-        }
-      }]
+    if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
+      option = noDataOption
+    } else {
+      option = {
+        title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: props.xAxisData, axisLabel: { color: '#666' } },
+        yAxis: { type: 'value', axisLabel: { color: '#666' } },
+        series: [{
+          name: '订单量',
+          type: 'line',
+          data: props.seriesData,
+          smooth: true,
+          itemStyle: { color: '#1989fa' },
+          areaStyle: { 
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(25, 137, 250, 0.3)' },
+              { offset: 1, color: 'rgba(25, 137, 250, 0.0)' }
+            ])
+          }
+        }]
+      }
     }
   }
 
-  // 保留原有dispatcher分支（柱状图）
+  // 调度人员：柱状图（增加无数据兜底）
   if (props.role === 'dispatcher') {
-    option = {
-      title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
-      tooltip: { trigger: 'axis' },
-      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-      xAxis: { type: 'category', data: props.xAxisData, axisLabel: { color: '#666' } },
-      yAxis: { type: 'value', axisLabel: { color: '#666' } },
-      series: [{
-        name: '运输单量',
-        type: 'bar',
-        data: props.seriesData,
-        itemStyle: { color: '#52c41a' },
-        barWidth: '60%'
-      }]
+    if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
+      option = noDataOption
+    } else {
+      option = {
+        title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: props.xAxisData, axisLabel: { color: '#666' } },
+        yAxis: { type: 'value', axisLabel: { color: '#666' } },
+        series: [{
+          name: '运输单量',
+          type: 'bar',
+          data: props.seriesData,
+          itemStyle: { color: '#52c41a' },
+          barWidth: '60%'
+        }]
+      }
     }
   }
 
-  // 保留原有warehouse分支（饼图）
+  // 仓储管理员：饼图（增加无数据兜底）
   if (props.role === 'warehouse') {
-    option = {
-      title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
-      tooltip: { trigger: 'item' },
-      legend: { orient: 'vertical', left: 'left', textStyle: { color: '#666' } },
-      series: [{
-        name: '库存数量',
-        type: 'pie',
-        radius: ['40%', '70%'],
-        data: props.xAxisData.map((name, index) => ({
-          name,
-          value: props.seriesData[index]
-        })),
-        itemStyle: {
-          color: (params) => {
-            const colorList = ['#1989fa', '#52c41a', '#faad14', '#f5222d']
-            return colorList[params.dataIndex % colorList.length]
-          }
-        },
-        label: {
-          show: true,
-          formatter: '{b}: {c} ({d}%)',
-          color: '#333'
-        }
-      }]
-    }
-  }
-
-  // 新增：track分支（轨迹地图），适配运输轨迹监控
-  if (props.role === 'track') {
-    option = {
-      title: { 
-        text: props.title, 
-        left: 'center', 
-        textStyle: { color: '#333', fontSize: 16 } 
-      },
-      tooltip: { 
-        trigger: 'item',
-        formatter: (params) => {
-          if (params.seriesType === 'lines') {
-            return `${params.name}<br/>起点：${params.data.coords[0].join(',')}<br/>终点：${params.data.coords[1].join(',')}`
-          }
-          return `坐标：${params.value.join(',')}`
-        }
-      },
-      // 地图核心配置
-      geo: {
-        map: 'china', // 使用注册的中国地图
-        roam: true, // 支持缩放/拖拽
-        label: { 
-          show: true, 
-          fontSize: 12,
-          color: '#666' 
-        },
-        emphasis: { 
-          areaColor: '#e0e0e0' 
-        },
-        // 默认聚焦到中国中部，适配所有区域轨迹
-        center: [105.07, 36.03],
-        zoom: 4
-      },
-      series: [
-        // 轨迹线
-        {
-          type: 'lines',
-          coordinateSystem: 'geo',
-          data: props.trackPoints.map(point => ({
-            name: `${point.from || '起点'}→${point.to || '终点'}`,
-            coords: [point.fromCoord || [0,0], point.toCoord || [0,0]]
+    if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
+      option = noDataOption
+    } else {
+      option = {
+        title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left', textStyle: { color: '#666' } },
+        series: [{
+          name: '库存数量',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          data: props.xAxisData.map((name, index) => ({
+            name,
+            value: props.seriesData[index]
           })),
-          lineStyle: { 
-            color: '#1989fa', 
-            width: 3, 
-            type: 'solid',
-            opacity: 0.8 
+          itemStyle: {
+            color: (params) => {
+              const colorList = ['#1989fa', '#52c41a', '#faad14', '#f5222d']
+              return colorList[params.dataIndex % colorList.length]
+            }
           },
-          emphasis: { 
-            lineStyle: { width: 5 } 
+          label: {
+            show: true,
+            formatter: '{b}: {c} ({d}%)',
+            color: '#333'
           }
-        },
-        // 轨迹节点（起点/终点）
-        {
-          type: 'scatter',
-          coordinateSystem: 'geo',
-          data: props.trackPoints.flatMap(point => [
-            { value: point.fromCoord || [0,0], name: point.from || '起点' },
-            { value: point.toCoord || [0,0], name: point.to || '终点' }
-          ]),
-          symbolSize: 10,
-          itemStyle: { 
-            color: '#f5222d',
-            opacity: 0.9 
-          },
-          emphasis: { 
-            symbolSize: 15 
-          }
-        }
-      ]
+        }]
+      }
     }
   }
 
-  // 保留原有setOption逻辑
-  if (chartInstance) { // 修改：使用传入的实例
-    chartInstance.setOption(option)
+  // 轨迹地图：增加数据容错，过滤无效坐标
+  if (props.role === 'track') {
+    // 过滤有效轨迹点（排除coords为[0,0]的情况）
+    const validTrackPoints = props.trackPoints.filter(point => {
+      const validFrom = point.fromCoord && point.fromCoord.every(num => num !== 0)
+      const validTo = point.toCoord && point.toCoord.every(num => num !== 0)
+      return validFrom || validTo
+    })
+
+    if (validTrackPoints.length === 0) {
+      option = noDataOption
+    } else {
+      option = {
+        title: { 
+          text: props.title, 
+          left: 'center', 
+          textStyle: { color: '#333', fontSize: 16 } 
+        },
+        tooltip: { 
+          trigger: 'item',
+          formatter: (params) => {
+            if (params.seriesType === 'lines') {
+              return `${params.name}<br/>起点：${params.data.coords[0].join(',')}<br/>终点：${params.data.coords[1].join(',')}`
+            }
+            return `坐标：${params.value.join(',')}`
+          }
+        },
+        geo: {
+          map: 'china',
+          roam: true,
+          label: { 
+            show: true, 
+            fontSize: 12,
+            color: '#666' 
+          },
+          emphasis: { 
+            areaColor: '#e0e0e0' 
+          },
+          center: [105.07, 36.03],
+          zoom: 4
+        },
+        series: [
+          {
+            type: 'lines',
+            coordinateSystem: 'geo',
+            data: validTrackPoints.map(point => ({
+              name: `${point.from || '起点'}→${point.to || '终点'}`,
+              coords: [point.fromCoord || [105.07, 36.03], point.toCoord || [105.07, 36.03]] // 兜底到中国中部
+            })),
+            lineStyle: { 
+              color: '#1989fa', 
+              width: 3, 
+              type: 'solid',
+              opacity: 0.8 
+            },
+            emphasis: { 
+              lineStyle: { width: 5 } 
+            }
+          },
+          {
+            type: 'scatter',
+            coordinateSystem: 'geo',
+            data: validTrackPoints.flatMap(point => [
+              { value: point.fromCoord || [105.07, 36.03], name: point.from || '起点' },
+              { value: point.toCoord || [105.07, 36.03], name: point.to || '终点' }
+            ]),
+            symbolSize: 10,
+            itemStyle: { 
+              color: '#f5222d',
+              opacity: 0.9 
+            },
+            emphasis: { 
+              symbolSize: 15 
+            }
+          }
+        ]
+      }
+    }
   }
+
+  chartInstance.setOption(option)
 }
 
-// 新增：打开全屏弹窗方法
+// 打开全屏弹窗
 const openFullscreen = () => {
   fullscreenVisible.value = true
-  // 等待弹窗DOM渲染完成后初始化全屏图表
   nextTick(() => {
     initFullscreenChart()
   })
 }
 
-// 保留原有监听逻辑，新增trackPoints监听（适配轨迹数据变化）
-// 修改：同时更新普通图表和全屏图表
-watch([() => props.role, () => props.xAxisData, () => props.seriesData, () => props.trackPoints], () => {
-  if (myChart) updateChart(myChart)
-  if (fullscreenChart) updateChart(fullscreenChart) // 新增：更新全屏图表
-}, { deep: false })
+// 修复7：弹窗关闭后销毁全屏图表，避免内存泄漏
+const handleDialogClosed = () => {
+  if (fullscreenChart.value) {
+    fullscreenChart.value.dispose()
+    fullscreenChart.value = null
+  }
+}
 
-// 保留原有生命周期逻辑
+// 修复8：修改watch为deep: true，监听数组深层变化
+watch(
+  [() => props.role, () => props.xAxisData, () => props.seriesData, () => props.trackPoints], 
+  () => {
+    if (myChart.value) updateChart(myChart.value)
+    if (fullscreenChart.value) updateChart(fullscreenChart.value)
+  }, 
+  { deep: true } // 监听对象/数组深层变化
+)
+
+// 生命周期：初始化+监听resize
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', () => {
-    if (myChart) myChart.resize()
-    if (fullscreenChart) fullscreenChart.resize() // 新增：全屏图表自适应
-  })
+  window.addEventListener('resize', handleResize)
 })
 
+// 修复9：卸载时移除resize监听，销毁所有实例
 onUnmounted(() => {
-  if (myChart) {
-    myChart.dispose()
-    myChart = null
+  window.removeEventListener('resize', handleResize) // 移除resize监听
+  if (myChart.value) {
+    myChart.value.dispose()
+    myChart.value = null
   }
-  // 新增：销毁全屏图表实例，避免内存泄漏
-  if (fullscreenChart) {
-    fullscreenChart.dispose()
-    fullscreenChart = null
+  if (fullscreenChart.value) {
+    fullscreenChart.value.dispose()
+    fullscreenChart.value = null
   }
 })
 </script>
 
 <style scoped>
-/* 保留原有样式，删除无关的全局样式（避免污染） */
+/* 基础容器样式 */
+.echarts-chart-wrapper {
+  width: 100%;
+  height: 100%;
+}
 #echarts-container {
   width: 100%;
   height: 100%;
 }
-/* 新增：全屏图表容器样式 */
 #fullscreen-echarts-container {
   width: 100%;
   height: 600px;
+}
+
+/* 修复10：穿透scoped样式，适配Echarts内部元素（地图文字） */
+:deep(.echarts-map-label) {
+  color: #666 !important;
+  font-size: 12px !important;
+}
+:deep(.echarts-legend-text) {
+  color: #666 !important;
 }
 </style>
