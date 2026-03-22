@@ -3,7 +3,7 @@ import axios from 'axios'
 
 // 1. 创建axios实例，适配项目基础配置（和其他代码统一请求基准地址）
 const request = axios.create({
-  baseURL: 'http://localhost:5000/api', // 对应你之前报错的5000端口后端接口
+  baseURL: 'http://localhost:5001/api', // 对应后端接口地址
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json;charset=UTF-8' // 通用请求头
@@ -54,27 +54,7 @@ request.interceptors.response.use(
   }
 )
 
-// 4. 仓储相关接口封装（适配仓储看板的所有数据请求）
-export const warehouseApi = {
-  // 获取管理层仓储数据
-  getManagerWarehouseData: () => request.get('/get_role_data?role=manager'),
-  // 获取调度员仓储数据
-  getDispatcherWarehouseData: () => request.get('/get_role_data?role=dispatcher'),
-  // 获取实时库存数据
-  getRealTimeStock: () => request.get('/warehouse/stock'),
-  // 获取库存设备状态
-  getEquipmentStatus: () => request.get('/warehouse/equipment'),
-  // 获取库龄分布数据
-  getStockAgeDistribution: () => request.get('/warehouse/stock_age'),
-  // 获取区域库存占比
-  getAreaStockRatio: () => request.get('/warehouse/area_ratio'),
-  // 获取设备预警信息
-  getEquipmentWarning: () => request.get('/warehouse/equipment_warning'),
-  // 获取年度库存走势
-  getYearStockTrend: () => request.get('/warehouse/year_stock_trend')
-}
-
-// 5. 调度相关接口封装（适配调度业务逻辑）
+// 4. 调度相关接口封装（适配调度业务逻辑）
 export const dispatchApi = {
   // 角色切换接口（对应你之前的角色切换请求）
   changeRole: (role) => request.post('/change_role', { role }),
@@ -94,7 +74,6 @@ export { request }
 // ===================== 原有路由逻辑（仅补充运力调度面板+角色权限，不修改原有） =====================
 import { createRouter, createWebHistory } from 'vue-router'
 import DispatcherView from '../views/DispatcherView.vue'
-import WarehouseView from '../views/WarehouseView.vue'
 import ManagerView from '../views/ManagerView.vue'
 // 新增2：导入运力调度面板组件（确保路径和你实际文件一致）
 import CapacityDispatch from '../views/CapacityDispatch.vue'
@@ -109,16 +88,6 @@ const routes = [
     meta: { 
       title: '调度人员视图',
       roles: ['dispatcher'] // 仅调度人员可访问
-    } 
-  },
-  // 仓储管理员视图 - 补充角色权限meta（不修改原有逻辑，仅加roles）
-  { 
-    path: '/warehouse', 
-    name: 'Warehouse', 
-    component: WarehouseView, 
-    meta: { 
-      title: '仓储管理员视图',
-      roles: ['warehouse'] // 仅仓储管理员可访问
     } 
   },
   // 管理层视图 - 补充角色权限meta（不修改原有逻辑，仅加roles）
@@ -172,13 +141,11 @@ router.beforeEach((to, from, next) => {
     next()
   } else {
     // 角色不匹配，跳转到对应角色的默认页面
-    if (currentRole === 'dispatcher') {
-      next('/dispatcher')
-    } else if (currentRole === 'warehouse') {
-      next('/warehouse')
-    } else {
-      next('/manager')
-    }
+  if (currentRole === 'dispatcher') {
+    next('/dispatcher')
+  } else {
+    next('/manager')
+  }
     // 提示无权限（可选，根据需要开启）
     if (window.ElMessage) {
       window.ElMessage.warning(`无权限访问【${to.meta.title}】，已跳转到您的角色专属页面`)

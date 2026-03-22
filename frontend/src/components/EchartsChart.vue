@@ -39,18 +39,18 @@ const props = defineProps({
   role: { 
     type: String, 
     default: 'manager',
-    validator: (val) => ['manager', 'dispatcher', 'warehouse', 'track'].includes(val) // 限制角色类型
+    validator: (val) => ['manager', 'dispatcher', 'warehouse', 'track'].includes(val)
   },
   title: { type: String, default: '物流数据可视化' },
   xAxisData: { type: Array, default: () => [] },
   seriesData: { type: Array, default: () => [] },
-  // 完善trackPoints类型校验，定义结构
+  seriesName: { type: String, default: '订单量' },
   trackPoints: { 
     type: Array, 
     default: () => [],
     validator: (val) => {
       return val.every(item => {
-        return item && (item.fromCoord || item.toCoord) // 至少有起点/终点坐标
+        return item && (item.fromCoord || item.toCoord)
       })
     }
   }
@@ -146,13 +146,13 @@ const updateChart = (chartInstance) => {
       option = {
         title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
         tooltip: { trigger: 'axis' },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
         xAxis: { type: 'category', data: props.xAxisData, axisLabel: { color: '#666' } },
         yAxis: { type: 'value', axisLabel: { color: '#666' } },
         series: [{
-          name: '订单量',
+          name: props.seriesName || '订单量',
           type: 'line',
-          data: props.seriesData,
+          data: props.seriesData || [],
           smooth: true,
           itemStyle: { color: '#1989fa' },
           areaStyle: { 
@@ -195,26 +195,46 @@ const updateChart = (chartInstance) => {
     } else {
       option = {
         title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'vertical', left: 'left', textStyle: { color: '#666' } },
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        legend: { 
+          bottom: '0%', 
+          left: 'center', 
+          textStyle: { color: '#666', fontSize: 11 },
+          itemWidth: 10,
+          itemHeight: 10,
+          padding: [5, 10]
+        },
         series: [{
-          name: '库存数量',
+          name: '业务占比',
           type: 'pie',
-          radius: ['40%', '70%'],
+          radius: ['35%', '60%'], // 缩小半径，给标签留空间
+          center: ['50%', '45%'], // 中心点上移，给底部图例留空间
+          roseType: 'radius', // 使用玫瑰图，增加错落感，减少拥挤
           data: props.xAxisData.map((name, index) => ({
             name,
             value: props.seriesData[index]
           })),
           itemStyle: {
+            borderRadius: 8,
+            borderColor: '#fff',
+            borderWidth: 2,
             color: (params) => {
-              const colorList = ['#1989fa', '#52c41a', '#faad14', '#f5222d']
+              const colorList = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399']
               return colorList[params.dataIndex % colorList.length]
             }
           },
           label: {
             show: true,
-            formatter: '{b}: {c} ({d}%)',
-            color: '#333'
+            position: 'outside',
+            formatter: '{b}\n{d}%',
+            fontSize: 10,
+            color: '#666'
+          },
+          labelLine: {
+            show: true,
+            length: 10,
+            length2: 10,
+            smooth: true
           }
         }]
       }
@@ -234,6 +254,7 @@ const updateChart = (chartInstance) => {
       option = noDataOption
     } else {
       option = {
+        backgroundColor: '#fff',
         title: { 
           text: props.title, 
           left: 'center', 
@@ -241,60 +262,99 @@ const updateChart = (chartInstance) => {
         },
         tooltip: { 
           trigger: 'item',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          borderColor: '#409EFF',
+          textStyle: { color: '#fff' },
           formatter: (params) => {
             if (params.seriesType === 'lines') {
-              return `${params.name}<br/>起点：${params.data.coords[0].join(',')}<br/>终点：${params.data.coords[1].join(',')}`
+              return `<b>${params.name}</b><br/>状态：运输中<br/>预计到达：2小时后`
             }
-            return `坐标：${params.value.join(',')}`
+            return `节点：${params.name}<br/>坐标：${params.value.join(',')}`
           }
         },
         geo: {
           map: 'china',
           roam: true,
           label: { 
-            show: true, 
-            fontSize: 12,
-            color: '#666' 
+            show: false, 
+            fontSize: 10,
+            color: '#999' 
+          },
+          itemStyle: {
+            areaColor: '#f5f7fa',
+            borderColor: '#dcdfe6',
+            borderWidth: 1
           },
           emphasis: { 
-            areaColor: '#e0e0e0' 
+            itemStyle: { areaColor: '#ecf5ff' },
+            label: { show: true, color: '#409EFF' }
           },
           center: [105.07, 36.03],
-          zoom: 4
+          zoom: 1.2
         },
         series: [
+          // 1. 静态轨迹线
           {
+            name: '轨迹线',
             type: 'lines',
             coordinateSystem: 'geo',
+            polyline: true, // 支持多点路径
+            zlevel: 1,
             data: validTrackPoints.map(point => ({
-              name: `${point.from || '起点'}→${point.to || '终点'}`,
-              coords: [point.fromCoord || [105.07, 36.03], point.toCoord || [105.07, 36.03]] // 兜底到中国中部
-            })),
-            lineStyle: { 
-              color: '#1989fa', 
-              width: 3, 
-              type: 'solid',
-              opacity: 0.8 
-            },
-            emphasis: { 
-              lineStyle: { width: 5 } 
-            }
+              name: `${point.from} -> ${point.to}`,
+              coords: point.pathCoords || [point.fromCoord, point.toCoord],
+              lineStyle: { color: point.urgent ? '#F56C6C' : '#409EFF', width: 2, opacity: 0.4, curveness: point.pathCoords ? 0 : 0.2 }
+            }))
           },
+          // 2. 动态流向效果 (飞线)
           {
-            type: 'scatter',
+            name: '动态流向',
+            type: 'lines',
             coordinateSystem: 'geo',
-            data: validTrackPoints.flatMap(point => [
-              { value: point.fromCoord || [105.07, 36.03], name: point.from || '起点' },
-              { value: point.toCoord || [105.07, 36.03], name: point.to || '终点' }
-            ]),
-            symbolSize: 10,
-            itemStyle: { 
-              color: '#f5222d',
-              opacity: 0.9 
+            polyline: true, // 支持多点路径
+            zlevel: 2,
+            effect: {
+              show: true,
+              period: 4, // 动画时间
+              trailLength: 0.4, // 拖尾长度
+              symbol: 'arrow', // 符号类型
+              symbolSize: 6,
+              color: '#fff'
             },
-            emphasis: { 
-              symbolSize: 15 
-            }
+            data: validTrackPoints.map(point => ({
+              coords: point.pathCoords || [point.fromCoord, point.toCoord],
+              lineStyle: {
+                color: point.urgent ? '#F56C6C' : '#409EFF',
+                width: 0,
+                curveness: point.pathCoords ? 0 : 0.2
+              }
+            }))
+          },
+          // 3. 散点标记 (起点和终点)
+          {
+            name: '物流节点',
+            type: 'effectScatter',
+            coordinateSystem: 'geo',
+            zlevel: 3,
+            rippleEffect: { brushType: 'stroke', scale: 3 },
+            label: {
+              show: true,
+              position: 'right',
+              formatter: '{b}',
+              fontSize: 10,
+              color: '#333'
+            },
+            symbolSize: (val) => 8,
+            itemStyle: {
+              color: (params) => {
+                // 起点蓝色，终点红色
+                return params.dataIndex % 2 === 0 ? '#409EFF' : '#67C23A';
+              }
+            },
+            data: validTrackPoints.flatMap(point => [
+              { name: point.from, value: [...point.fromCoord, 100] },
+              { name: point.to, value: [...point.toCoord, 100] }
+            ])
           }
         ]
       }

@@ -18,11 +18,6 @@ export const getFilteredCapacityData = (params) => {
   return request.get('/dispatcher/capacity', { params });
 };
 
-// 若需给仓储模块加筛选，同理调用原有仓储接口：/warehouse/stock
-export const getFilteredStockData = (params) => {
-  return request.get('/warehouse/stock', { params });
-};
-
 const baseURL = 'http://localhost:3000/api';
 
 /**

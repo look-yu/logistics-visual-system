@@ -1,86 +1,174 @@
 const express = require('express');
 const router = express.Router();
 
-// ========== 复用你app.js中的mockData（避免重复定义） ==========
-// 注意：如果你的mockData在app.js中定义，需先把mockData导出，或直接复制到这里（二选一）
-// 方案1：如果app.js中导出了mockData（推荐），取消下面注释并引入
-// const { mockData } = require('../app');
+const UserController = require('../controllers/UserController');
+const OrderController = require('../controllers/OrderController');
+const VehicleController = require('../controllers/VehicleController');
+const ReportController = require('../controllers/ReportController');
+const PriceController = require('../controllers/PriceController');
+const DriverController = require('../controllers/DriverController');
+const CustomerController = require('../controllers/CustomerController');
+const ServiceRequestController = require('../controllers/ServiceRequestController');
+const ShipmentPlanController = require('../controllers/ShipmentPlanController');
+const InboundOutboundController = require('../controllers/InboundOutboundController');
+const TransportQueueController = require('../controllers/TransportQueueController');
 
-// 方案2：直接复制app.js中的mockData到这里（确保和app.js一致）
-const mockData = {
-  "manager": {
-    "total_order": 2150,
-    "finished_order": 2080,
-    "exception_order": 70,
-    "avg_delivery_time": 8.2,
-    "trend_data": { "xAxis": ["1月", "2月", "3月", "4月"], "series": [1200, 1580, 1820, 2150] },
-    "pie_data": { "xAxis": ["生鲜配送", "标品配送", "大件配送", "耗材配送"], "series": [650, 980, 320, 200] },
-    "exception_order_top5": [
-      { orderNo: "WL20260201001", reason: "超时配送", area: "东区" },
-      { orderNo: "WL20260201002", reason: "货物破损", area: "西区" },
-      { orderNo: "WL20260201003", reason: "地址错误", area: "南区" },
-      { orderNo: "WL20260201004", reason: "客户拒收", area: "北区" },
-      { orderNo: "WL20260201005", reason: "运力不足", area: "中区" }
-    ]
-  },
-  "dispatcher": {
-    "today_transport": 357,
-    "unfinished_transport": 28,
-    "avg_transport_time": 4.5,
-    "trend_data": { "xAxis": ["早班(6-12)", "中班(12-18)", "晚班(18-24)"], "series": [85, 162, 110] },
-    "pie_data": { "xAxis": ["厢式车", "冷链车", "平板车"], "series": [200, 100, 57] },
-    "car_status": [
-      { id:1, carNo: "沪A12345", status: "空闲", driver: "张三", phone: "13800138000", area:"东区", load:"5吨" },
-      { id:2, carNo: "沪B67890", status: "在途", driver: "李四", phone: "13900139000", area:"西区", load:"8吨" },
-      { id:3, carNo: "沪C11223", status: "维修", driver: "王五", phone: "13700137000", area:"南区", load:"10吨" }
-    ],
-    "wait_allocate_order": [
-      { orderId: "WL20260221001", area: "东区", goodsType: "生鲜", weight:"2吨", urgent: "紧急", status:"待分配" },
-      { orderId: "WL20260221002", area: "西区", goodsType: "标品", weight:"3吨", urgent: "普通", status:"待分配" }
-    ],
-    "track_data": [
-      {
-        orderId: "WL20260221001",
-        status: "配送中",
-        points: [
-          { from: "仓库A", fromCoord: [121.4737, 31.2304], to: "配送点1", toCoord: [121.5051, 31.2477] },
-          { from: "配送点1", fromCoord: [121.5051, 31.2477], to: "配送点2", toCoord: [121.5370, 31.2519] }
-        ],
-        detail: [
-          { time: "2026-02-21 08:00", node: "仓库A出库", status: "待配送", operator: "张三", remark: "生鲜装车完成" },
-          { time: "2026-02-21 09:30", node: "配送点1", status: "配送中", operator: "张三", remark: "正在卸货" }
-        ]
-      }
-    ]
-  },
-  "warehouse": {
-    "total_stock": 835,
-    "pending_out_stock": 120,
-    "warning_stock": 15,
-    "stock_turnover": 85,
-    "pie_data": { "xAxis": ["库位A(生鲜)", "库位B(标品)", "库位C(大件)", "库位D(耗材)"], "series": [210, 350, 180, 95] },
-    "stock_detail": [
-      { goodsId:1, goodsName: "生鲜蔬菜", stock: 45, safeStock: 50, status: "预警", warehouse: "库位A" },
-      { goodsId:2, goodsName: "标品纸巾", stock: 120, safeStock: 80, status: "正常", warehouse: "库位B" },
-      { goodsId:3, goodsName: "大件家电", stock: 30, safeStock: 20, status: "正常", warehouse: "库位C" },
-      { goodsId:4, goodsName: "耗材纸箱", stock: 15, safeStock: 20, status: "预警", warehouse: "库位D" }
-    ],
-    "in_out_record": [
-      { id:1, time: "2026-02-21 09:00", type: "入库", goodsName: "生鲜蔬菜", num: 100, operator: "张三" },
-      { id:2, time: "2026-02-21 10:30", type: "出库", goodsName: "标品纸巾", num: 50, operator: "李四" }
-    ]
-  }
+// ========== 用户管理路由 ==========
+router.post('/login', UserController.login);
+router.get('/users', UserController.getUserList);
+router.post('/users', UserController.register);
+router.put('/users/:id', UserController.updateUser);
+router.delete('/users/:id', UserController.deleteUser);
+
+// ========== 订单管理路由 ==========
+router.get('/orders', OrderController.getOrderList);
+router.post('/orders', OrderController.createOrder);
+router.get('/orders/:id', OrderController.getOrderDetail);
+router.put('/orders/:id/status', OrderController.updateOrderStatus);
+
+// ========== 价格管理路由 ==========
+router.get('/price/config', PriceController.getPriceConfig);
+router.put('/price/config', PriceController.updatePriceConfig);
+router.post('/price/calculate', PriceController.calculateOrderPrice);
+
+// ========== 运输管理路由 ==========
+router.get('/vehicles', VehicleController.getVehicleList);
+router.post('/transport/schedule', VehicleController.scheduleVehicle);
+router.get('/transport/tasks', VehicleController.getTaskList);
+router.put('/transport/tasks/:id/status', VehicleController.updateTaskStatus);
+
+// ========== 司机管理路由 ==========
+router.get('/drivers', DriverController.getDriverList);
+router.get('/drivers/:id', DriverController.getDriverDetail);
+router.post('/drivers', DriverController.createDriver);
+router.put('/drivers/:id', DriverController.updateDriver);
+router.delete('/drivers/:id', DriverController.deleteDriver);
+router.get('/drivers/:id/vehicles', DriverController.getDriverVehicles);
+router.get('/drivers/:id/tasks', DriverController.getDriverTasks);
+
+// ========== 客户管理路由 ==========
+router.get('/customers', CustomerController.getCustomerList);
+router.get('/customers/:id', CustomerController.getCustomerDetail);
+router.post('/customers', CustomerController.createCustomer);
+router.put('/customers/:id', CustomerController.updateCustomer);
+router.delete('/customers/:id', CustomerController.deleteCustomer);
+router.get('/customers/stats', CustomerController.getCustomerStats);
+
+// ========== 服务请求路由 ==========
+router.get('/service-requests', ServiceRequestController.getServiceRequestList);
+router.get('/service-requests/:id', ServiceRequestController.getServiceRequestDetail);
+router.post('/service-requests', ServiceRequestController.createServiceRequest);
+router.put('/service-requests/:id', ServiceRequestController.updateServiceRequest);
+router.delete('/service-requests/:id', ServiceRequestController.deleteServiceRequest);
+router.post('/service-requests/:id/handle', ServiceRequestController.handleServiceRequest);
+router.get('/service-requests/stats', ServiceRequestController.getServiceRequestStats);
+
+// ========== 装运计划路由 ==========
+router.get('/shipment-plans', ShipmentPlanController.getShipmentPlanList);
+router.get('/shipment-plans/:id', ShipmentPlanController.getShipmentPlanDetail);
+router.post('/shipment-plans', ShipmentPlanController.createShipmentPlan);
+router.put('/shipment-plans/:id', ShipmentPlanController.updateShipmentPlan);
+router.delete('/shipment-plans/:id', ShipmentPlanController.deleteShipmentPlan);
+router.post('/shipment-plans/:id/confirm', ShipmentPlanController.confirmShipmentPlan);
+router.post('/shipment-plans/:id/start', ShipmentPlanController.startShipmentPlan);
+router.post('/shipment-plans/:id/complete', ShipmentPlanController.completeShipmentPlan);
+router.get('/shipment-plans/stats', ShipmentPlanController.getShipmentPlanStats);
+
+// ========== 出入库管理路由 ==========
+router.get('/inbound-outbound', InboundOutboundController.getRecordList);
+router.get('/inbound-outbound/:id', InboundOutboundController.getRecordDetail);
+router.post('/inbound-outbound', InboundOutboundController.createRecord);
+router.put('/inbound-outbound/:id', InboundOutboundController.updateRecord);
+router.delete('/inbound-outbound/:id', InboundOutboundController.deleteRecord);
+router.get('/inbound-outbound/stats', InboundOutboundController.getStatistics);
+
+// ========== 运输队列路由 ==========
+router.get('/transport-queue', TransportQueueController.getQueueList);
+router.get('/transport-queue/:id', TransportQueueController.getQueueDetail);
+router.post('/transport-queue', TransportQueueController.createQueue);
+router.put('/transport-queue/:id', TransportQueueController.updateQueue);
+router.delete('/transport-queue/:id', TransportQueueController.deleteQueue);
+router.get('/transport-queue/stats', TransportQueueController.getStatistics);
+
+// ========== 报表统计路由 ==========
+router.get('/reports/dashboard', ReportController.getDashboardData);
+router.get('/reports/order-trend', ReportController.getOrderTrend);
+
+const ReportModel = require('../models/ReportModel');
+
+// ========== 辅助函数：生成随机变动数据 ==========
+const randomChange = (val, range = 0.1) => {
+  const delta = val * range;
+  return Math.round(val + (Math.random() * delta * 2 - delta));
 };
 
-// ========== 原有接口（保留，不修改） ==========
+// ========== 原有接口（已升级为动态模拟） ==========
 // 接口1：获取角色数据
-router.get('/get_role_data', (req, res) => {
-  const { role = 'manager' } = req.query;
-  res.json({
-    code: 200,
-    msg: "success",
-    data: mockData[role] || mockData.manager
-  });
+router.get('/get_role_data', async (req, res) => {
+  const { role = 'manager', month, dimension = 'order' } = req.query;
+  
+  try {
+    if (role === 'manager') {
+      // 从真实数据库获取管理层数据
+      const days = month ? null : 7;
+      const orderStats = await ReportModel.getOrderStats(days, month ? parseInt(month) : null);
+      const coreIndicators = await ReportModel.getCoreIndicators();
+      const exceptionOrders = await ReportModel.getExceptionOrders();
+      const orderTypeDistribution = await ReportModel.getOrderTypeDistribution();
+      
+      const data = {
+        core_indicators: coreIndicators || {
+          total_order_num: '0',
+          total_order_trend: '0%',
+          finish_order_num: '0',
+          finish_order_trend: '0%',
+          exception_order_num: '0',
+          exception_order_trend: '0%',
+          avg_delivery_time: '0h',
+          avg_delivery_trend: '0%'
+        },
+        trend_data: {
+          xAxis: orderStats.length > 0 ? orderStats.map(i => {
+            const dateStr = i.date ? String(i.date) : '';
+            return dateStr.split('-').pop() + '日';
+          }) : [],
+          series: dimension === 'amount' 
+            ? (orderStats.length > 0 ? orderStats.map(i => (i.total_amount / 1000).toFixed(1)) : [])
+            : (orderStats.length > 0 ? orderStats.map(i => i.count) : [])
+        },
+        pie_data: orderTypeDistribution,
+        exception_order_top5: exceptionOrders.length > 0 ? exceptionOrders : []
+      };
+      return res.json({ code: 200, data, msg: "success" });
+    }
+
+    if (role === 'dispatcher') {
+      const coreIndicators = await ReportModel.getDispatcherCoreIndicators();
+      const waitAllocateOrders = await ReportModel.getWaitAllocateOrders();
+      const activeVehicles = await ReportModel.getActiveVehicles();
+      const taskProgress = await ReportModel.getTaskProgress();
+      
+      const data = {
+        core_indicators: coreIndicators || {
+          today_transport_num: '0',
+          today_transport_trend: '0%',
+          unfinished_order_num: '0',
+          unfinished_order_trend: '0%',
+          avg_delivery_time: '0h',
+          avg_delivery_trend: '0%'
+        },
+        wait_allocate_order: waitAllocateOrders.length > 0 ? waitAllocateOrders : [],
+        active_vehicles: activeVehicles,
+        task_progress: taskProgress
+      };
+      return res.json({ code: 200, data, msg: "success" });
+    }
+
+    res.json({ code: 404, msg: "未找到该角色的数据" });
+  } catch (err) {
+    console.error('获取角色数据失败：', err);
+    res.json({ code: 500, msg: "服务器内部错误" });
+  }
 });
 
 // 接口2：切换角色
@@ -94,104 +182,184 @@ router.post('/change_role', (req, res) => {
 });
 
 // ========== 新增：调度员功能路由（仅添加，不修改原有） ==========
-// 1. 获取运力调度数据
-router.get('/dispatcher/capacity', (req, res) => {
-  res.json({
-    code: 200,
-    msg: "success",
-    data: {
-      cars: mockData.dispatcher.car_status,
-      orders: mockData.dispatcher.wait_allocate_order
-    }
-  });
+// 1. 获取运力调度数据（使用真实数据）
+router.get('/dispatcher/capacity', async (req, res) => {
+  const db = require('../config/db');
+  
+  try {
+    // 1. 获取所有车辆信息
+    const [vehicles] = await db.query(`
+      SELECT 
+        id,
+        car_no as carNo,
+        driver_name as driver,
+        driver_phone as phone,
+        status,
+        current_area as area,
+        load_capacity as load
+      FROM vehicles
+      ORDER BY id ASC
+    `);
+    
+    // 2. 获取待分配订单
+    const [orders] = await db.query(`
+      SELECT 
+        id as orderId,
+        order_no as orderNo,
+        customer_name,
+        sender_address,
+        receiver_address,
+        goods_type,
+        weight,
+        amount,
+        status
+      FROM orders
+      WHERE status IN ('pending', 'assigned')
+      ORDER BY create_time ASC
+    `);
+    
+    res.json({
+      code: 200,
+      msg: "success",
+      data: {
+        cars: vehicles,
+        orders: orders
+      }
+    });
+  } catch (err) {
+    console.error('获取运力调度数据失败:', err);
+    res.json({
+      code: 500,
+      msg: "获取运力调度数据失败",
+      data: {
+        cars: [],
+        orders: []
+      }
+    });
+  }
 });
 
-// 2. 分配运单接口
-router.post('/dispatcher/allocate', (req, res) => {
+// 2. 分配运单接口（关联真实订单）
+router.post('/dispatcher/allocate', async (req, res) => {
   const { orderId, carId } = req.body;
-  // 模拟更新状态
-  const car = mockData.dispatcher.car_status.find(item => item.id === carId);
-  if (car) car.status = "已分配";
-  const order = mockData.dispatcher.wait_allocate_order.find(item => item.orderId === orderId);
-  if (order) order.status = "已分配";
+  const db = require('../config/db');
   
-  res.json({
-    code: 200,
-    msg: "运单分配成功",
-    data: {}
-  });
+  if (!orderId || !carId) {
+    return res.json({
+      code: 400,
+      msg: "参数不完整",
+      data: {}
+    });
+  }
+  
+  const connection = await db.pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    // 1. 更新订单状态为已分配
+    await connection.query(
+      'UPDATE orders SET status = ? WHERE id = ?',
+      ['assigned', orderId]
+    );
+    
+    // 2. 创建运输任务
+    const [taskResult] = await connection.query(
+      'INSERT INTO transport_tasks (task_no, order_id, vehicle_id, status) VALUES (?, ?, ?, ?)',
+      [`TASK${Date.now()}`, orderId, carId, 'pending']
+    );
+    
+    // 3. 更新车辆状态为忙碌
+    await connection.query(
+      'UPDATE vehicles SET status = ?, current_order_id = ? WHERE id = ?',
+      ['busy', orderId, carId]
+    );
+    
+    await connection.commit();
+    
+    res.json({
+      code: 200,
+      msg: "运单分配成功",
+      data: {
+        taskId: taskResult.insertId,
+        orderId: orderId,
+        carId: carId
+      }
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error('分配运单失败:', err);
+    res.json({
+      code: 500,
+      msg: "分配运单失败：" + err.message,
+      data: {}
+    });
+  } finally {
+    connection.release();
+  }
 });
 
-// 3. 获取运输轨迹数据
-router.get('/dispatcher/track', (req, res) => {
+// 3. 获取运输轨迹数据（使用真实订单数据）
+router.get('/dispatcher/track', async (req, res) => {
   const { orderId } = req.query;
-  let tracks = mockData.dispatcher.track_data;
-  if (orderId) {
-    tracks = tracks.filter(item => item.orderId === orderId);
-  }
-  res.json({
-    code: 200,
-    msg: "success",
-    data: { tracks }
-  });
-});
-
-// ========== 新增：仓储员功能路由（仅添加，不修改原有） ==========
-// 1. 获取库存数据
-router.get('/warehouse/stock', (req, res) => {
-  res.json({
-    code: 200,
-    msg: "success",
-    data: {
-      goods: mockData.warehouse.stock_detail,
-      stock: mockData.warehouse.stock_detail,
-      inOutRecord: mockData.warehouse.in_out_record
-    }
-  });
-});
-
-// 2. 提交出入库登记
-router.post('/warehouse/inout', (req, res) => {
-  const { goodsId, num, type, operator } = req.body;
-  // 模拟更新库存
-  const goods = mockData.warehouse.stock_detail.find(item => item.goodsId === goodsId);
-  if (goods) {
-    if (type === "入库") {
-      goods.stock = Number(goods.stock) + Number(num);
-    } else {
-      goods.stock = Number(goods.stock) - Number(num);
-    }
-    // 更新状态
-    goods.status = goods.stock < goods.safeStock ? "预警" : "正常";
-  }
-  // 新增记录
-  mockData.warehouse.in_out_record.unshift({
-    id: Date.now(),
-    time: new Date().toLocaleString(),
-    goodsName: goods?.goodsName || "",
-    type,
-    num,
-    operator
-  });
+  const db = require('../config/db');
   
-  res.json({
-    code: 200,
-    msg: `${type}登记成功`,
-    data: {}
-  });
-});
-
-// 3. 补货提醒接口
-router.post('/warehouse/replenish', (req, res) => {
-  const { goodsId } = req.body;
-  const goods = mockData.warehouse.stock_detail.find(item => item.goodsId === goodsId);
-  if (goods) goods.status = "补货中";
-  
-  res.json({
-    code: 200,
-    msg: "补货提醒发送成功",
-    data: {}
-  });
+  try {
+    let sql = `
+      SELECT 
+        o.id as orderId,
+        o.order_no,
+        o.sender_coord as fromCoord,
+        o.receiver_coord as toCoord,
+        o.sender_address,
+        o.receiver_address,
+        o.status,
+        o.customer_name,
+        v.car_no as vehicleNo,
+        v.driver_name as driverName
+      FROM orders o
+      LEFT JOIN transport_tasks t ON o.id = t.order_id
+      LEFT JOIN vehicles v ON t.vehicle_id = v.id
+      WHERE o.sender_coord IS NOT NULL 
+        AND o.receiver_coord IS NOT NULL
+    `;
+    let params = [];
+    
+    if (orderId) {
+      sql += ' AND o.id = ?';
+      params.push(orderId);
+    }
+    
+    sql += ' ORDER BY o.create_time DESC';
+    
+    const [rows] = await db.query(sql, params);
+    
+    const tracks = rows.map(row => ({
+      orderId: row.orderId,
+      orderNo: row.order_no,
+      fromCoord: row.fromCoord ? row.fromCoord.split(',').map(c => parseFloat(c.trim())) : null,
+      toCoord: row.toCoord ? row.toCoord.split(',').map(c => parseFloat(c.trim())) : null,
+      senderAddress: row.sender_address,
+      receiverAddress: row.receiver_address,
+      status: row.status,
+      customerName: row.customer_name,
+      vehicleNo: row.vehicleNo,
+      driverName: row.driverName
+    }));
+    
+    res.json({
+      code: 200,
+      msg: "success",
+      data: { tracks }
+    });
+  } catch (err) {
+    console.error('获取运输轨迹失败:', err);
+    res.json({
+      code: 500,
+      msg: "获取运输轨迹失败",
+      data: { tracks: [] }
+    });
+  }
 });
 
 // 导出路由（必须保留）

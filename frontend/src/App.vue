@@ -1,132 +1,106 @@
 <template>
-  <el-container style="height: 100vh;">
-    <!-- 顶部导航栏 -->
-    <el-header style="background-color: #fff; border-bottom: 1px solid #e6e6e6;">
-      <div class="header-left">
-        <el-icon size="24" color="#1989fa"><Ship /></el-icon>
-        <span class="system-name">物流管理数据可视化系统</span>
-      </div>
-      <div class="header-right">
-        <el-tag type="primary" size="small">当前角色：{{ currentRole }}</el-tag>
-        <el-button type="text" icon="User">管理员</el-button>
-        <el-button type="text" icon="SwitchButton" @click="openRoleDialog">切换角色</el-button>
-      </div>
-    </el-header>
-
-    <el-container>
-      <!-- 左侧侧边栏（修复菜单v-if逻辑，避免循环） -->
-      <el-aside width="200px" style="background-color: #fff; border-right: 1px solid #e6e6e6;">
-        <el-menu
-          :default-active="activeMenu"
-          class="el-menu-vertical-demo"
-          background-color="#fff"
-          text-color="#333"
-          active-text-color="#1989fa"
-          @select="handleMenuSelect"
-        >
-          <el-menu-item index="/manager">
-            <el-icon><House /></el-icon>
-            <template #title>数据大屏</template>
-          </el-menu-item>
-
-          <!-- 修复：简化v-if逻辑，避免循环判断 -->
-          <el-sub-menu index="dispatcher" v-show="currentRole === 'dispatcher' || currentRole === 'manager'">
-            <template #title>
-              <el-icon><TruckIcon /></el-icon>
-              <span>调度管理</span>
-            </template>
-            <el-menu-item index="/dispatcher">运输轨迹</el-menu-item>
-          </el-sub-menu>
-
-          <el-sub-menu index="warehouse" v-show="currentRole === 'warehouse' || currentRole === 'manager'">
-            <template #title>
-              <el-icon><BoxIcon /></el-icon>
-              <span>仓储管理</span>
-            </template>
-            <el-menu-item index="/warehouse">库存监控</el-menu-item>
-          </el-sub-menu>
-        </el-menu>
-      </el-aside>
-
-      <el-main style="background-color: #f5f7fa; padding: 20px;">
-        <!-- 核心修复：给router-view加key，避免复用导致的循环 -->
-        <router-view :key="$route.fullPath" />
-      </el-main>
-    </el-container>
-
-    <el-dialog title="切换角色" v-model="roleDialogVisible" width="300px">
-      <el-select v-model="selectedRole" style="width: 100%;">
-        <el-option label="管理层" value="manager" />
-        <el-option label="调度人员" value="dispatcher" />
-        <el-option label="仓储管理员" value="warehouse" />
-      </el-select>
-      <template #footer>
-        <el-button @click="roleDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmRoleChange">确认</el-button>
-      </template>
-    </el-dialog>
-  </el-container>
+  <el-config-provider :locale="zhCn">
+    <div class="app-wrapper">
+      <el-container v-if="!$route.meta.hideMenu">
+        <el-aside width="200px" v-if="user?.role !== 'customer'">
+          <div class="logo">
+            <el-icon><Van /></el-icon>
+            <span>物流管理系统</span>
+          </div>
+          <el-menu
+            :default-active="$route.path"
+            router
+            background-color="#001529"
+            text-color="#fff"
+            active-text-color="#409eff"
+          >
+            <el-menu-item index="/manager">
+              <el-icon><Monitor /></el-icon>
+              <span>决策中心</span>
+            </el-menu-item>
+            <el-menu-item index="/dispatcher">
+              <el-icon><Location /></el-icon>
+              <span>运输调度</span>
+            </el-menu-item>
+            <el-menu-item index="/orders">
+              <el-icon><Document /></el-icon>
+              <span>订单管理</span>
+            </el-menu-item>
+            <el-menu-item index="/customers">
+              <el-icon><User /></el-icon>
+              <span>客户管理</span>
+            </el-menu-item>
+            <el-menu-item index="/drivers">
+              <el-icon><Van /></el-icon>
+              <span>司机管理</span>
+            </el-menu-item>
+            <el-menu-item index="/reports">
+              <el-icon><PieChart /></el-icon>
+              <span>分析看板</span>
+            </el-menu-item>
+          </el-menu>
+        </el-aside>
+        
+        <el-container>
+          <el-header>
+            <div class="header-left">{{ user?.role === 'customer' ? '客户中心' : $route.meta.title }}</div>
+            <div class="header-right">
+              <div class="user-info">
+                <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
+                <span class="user-name">{{ user?.real_name || '管理员' }}</span>
+                <el-button type="danger" size="small" @click="handleLogout" class="logout-btn">
+                  退出登录
+                </el-button>
+              </div>
+            </div>
+          </el-header>
+          
+          <el-main>
+            <router-view v-slot="{ Component }">
+              <transition name="fade-transform" mode="out-in">
+                <component :is="Component" />
+              </transition>
+            </router-view>
+          </el-main>
+        </el-container>
+      </el-container>
+      
+      <router-view v-else />
+    </div>
+  </el-config-provider>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { useDataStore } from './stores/dataStore'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import { Monitor, Location, Document, PieChart, User, Files, Van, Service, Box } from '@element-plus/icons-vue'
 
 const router = useRouter()
-const currentRole = ref('manager')
-const roleDialogVisible = ref(false)
-const selectedRole = ref('manager')
+const store = useDataStore()
+const user = computed(() => store.user)
 
-// 修复：简化activeMenu计算属性，避免循环依赖
-const activeMenu = computed(() => {
-  return router.currentRoute.path || '/manager'
-})
-
-const openRoleDialog = () => {
-  selectedRole.value = currentRole.value
-  roleDialogVisible.value = true
+const handleLogout = () => {
+  store.logout()
+  router.push('/login')
 }
-
-// 修复：异步函数加try/catch，避免报错导致循环
-const confirmRoleChange = async () => {
-  try {
-    await axios.post('http://localhost:5000/api/change_role', {
-      role: selectedRole.value
-    })
-  } catch (err) {
-    console.log('角色切换请求失败：', err)
-  }
-  currentRole.value = selectedRole.value
-  roleDialogVisible.value = false
-  // 修复：延迟跳转，避免同步渲染导致的循环
-  setTimeout(() => {
-    router.push(`/${selectedRole.value}`)
-  }, 100)
-}
-
-const handleMenuSelect = (key) => {
-  if (key.startsWith('/')) {
-    // 修复：同样延迟跳转
-    setTimeout(() => {
-      router.push(key)
-    }, 100)
-  }
-}
-
-// 新增：页面加载时初始化角色
-onMounted(() => {
-  currentRole.value = localStorage.getItem('role') || 'manager'
-})
 </script>
 
-<style scoped>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body, #app { height: 100%; background-color: #f5f7fa; }
-.header-left { float: left; display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; color: #1989fa; }
-.header-right { float: right; display: flex; align-items: center; gap: 15px; }
-.system-name { font-size: 18px; font-weight: 600; }
-.el-header { padding: 0 20px; line-height: 60px; }
-.el-aside { color: #333; }
-.el-menu-vertical-demo { border-right: none; }
+<style>
+body { margin: 0; font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif; }
+.app-wrapper { height: 100vh; display: flex; flex-direction: column; }
+.el-aside { background-color: #001529; color: #fff; transition: width 0.3s; }
+.logo { height: 60px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 18px; font-weight: bold; background: #002140; }
+.el-header { background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 1px 4px rgba(0,21,41,.08); height: 60px; }
+.header-left { font-size: 16px; font-weight: 500; }
+.user-info { display: flex; align-items: center; gap: 12px; }
+.user-name { font-size: 14px; color: #303133; }
+.logout-btn { margin-left: 10px; }
+.el-main { background-color: #f0f2f5; padding: 20px; overflow-y: auto; }
+
+/* Transition Animation */
+.fade-transform-enter-active, .fade-transform-leave-active { transition: all .3s; }
+.fade-transform-enter-from { opacity: 0; transform: translateX(-30px); }
+.fade-transform-leave-to { opacity: 0; transform: translateX(30px); }
 </style>

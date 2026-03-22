@@ -1,110 +1,85 @@
 <template>
   <div class="manager-view">
-    <div class="page-header">
-      <h2>管理层运营数据大屏</h2>
-      <el-divider direction="vertical" style="height: 24px;"></el-divider> <!-- 修复：显式闭合 -->
-      <span class="date-text">{{ currentDate }}</span>
+    <div class="dashboard-header">
+      <div class="left">
+        <h2 class="title">运营决策中心</h2>
+        <p class="subtitle">实时物流运营指标监控与决策分析</p>
+      </div>
+      <div class="right">
+        <el-tag type="info" effect="plain">{{ currentDate }}</el-tag>
+        <el-button type="primary" icon="Refresh" circle @click="fetchManagerData" />
+      </div>
     </div>
 
-    <!-- 核心指标卡片（保留原有，无修改） -->
-    <el-row :gutter="20" style="margin-bottom: 20px;">
-      <el-col :span="6">
-        <el-card class="data-card" shadow="hover">
-          <div class="card-header">
-            <span class="card-title">总订单量</span>
-            <el-tag type="primary">4月</el-tag>
+    <!-- 核心KPI指标行 -->
+    <el-row :gutter="20" class="kpi-row">
+      <el-col :span="6" v-for="kpi in kpiCards" :key="kpi.title">
+        <el-card class="kpi-card" shadow="hover" :body-style="{ padding: '20px' }">
+          <div class="kpi-content">
+            <div class="kpi-info">
+              <div class="kpi-title">{{ kpi.title }}</div>
+              <div class="kpi-value">{{ kpi.value }}</div>
+              <div class="kpi-trend" :class="kpi.trendType">
+                <el-icon><component :is="kpi.trendIcon" /></el-icon>
+                <span>{{ kpi.trendValue }} {{ kpi.trendText }}</span>
+              </div>
+            </div>
+            <div class="kpi-icon-wrapper" :style="{ backgroundColor: kpi.bgColor }">
+              <el-icon :style="{ color: kpi.iconColor }"><component :is="kpi.icon" /></el-icon>
+            </div>
           </div>
-          <div class="card-value">{{ totalOrderNum }}</div>
-          <div class="card-trend trend-up">
-            <el-icon><ArrowUp /></el-icon>
-            <span>{{ totalOrderTrend }} 较上月</span>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="data-card" shadow="hover">
-          <div class="card-header">
-            <span class="card-title">完成订单量</span>
-            <el-tag type="success">今日</el-tag>
-          </div>
-          <div class="card-value">{{ finishOrderNum }}</div>
-          <div class="card-trend trend-up">
-            <el-icon><ArrowUp /></el-icon>
-            <span>{{ finishOrderTrend }} 较昨日</span>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="data-card" shadow="hover">
-          <div class="card-header">
-            <span class="card-title">异常订单量</span>
-            <el-tag type="warning">今日</el-tag>
-          </div>
-          <div class="card-value">{{ exceptionOrderNum }}</div>
-          <div class="card-trend trend-down">
-            <el-icon><ArrowDown /></el-icon>
-            <span>{{ exceptionOrderTrend }} 较昨日</span>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="data-card" shadow="hover">
-          <div class="card-header">
-            <span class="card-title">平均配送时效</span>
-            <el-tag type="info">今日</el-tag>
-          </div>
-          <div class="card-value">{{ avgDeliveryTime }}</div>
-          <div class="card-trend trend-down">
-            <el-icon><ArrowDown /></el-icon>
-            <span>{{ avgDeliveryTrend }} 较昨日</span>
-          </div>
+          <el-progress :percentage="kpi.progress" :color="kpi.iconColor" :show-text="false" :stroke-width="4" />
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 新增：管理层专属 - 异常订单TOP5表格 -->
-    <el-row :gutter="20" style="margin-bottom: 20px;">
-      <el-col :span="24">
-        <el-card shadow="hover">
+    <!-- 中间数据层：异常监控 + 趋势分析 -->
+    <el-row :gutter="20" class="chart-row">
+      <el-col :span="16">
+        <el-card shadow="hover" class="main-chart-card">
           <template #header>
-            <span class="chart-title">异常订单TOP5</span>
+            <div class="card-header">
+              <div class="header-left">
+                <span class="card-title">月度订单增长趋势</span>
+                <el-date-picker
+                  v-model="selectedMonth"
+                  type="month"
+                  placeholder="选择月份"
+                  size="small"
+                  style="width: 130px; margin-left: 15px;"
+                  @change="handleMonthChange"
+                />
+              </div>
+              <el-radio-group v-model="trendDimension" size="small">
+                <el-radio-button value="order">订单量</el-radio-button>
+                <el-radio-button value="amount">交易额</el-radio-button>
+              </el-radio-group>
+            </div>
           </template>
-          <el-table :data="exceptionOrderList" border size="small">
-            <el-table-column prop="orderNo" label="订单号" width="180"></el-table-column> <!-- 修复：显式闭合 -->
-            <el-table-column prop="reason" label="异常原因" width="200"></el-table-column> <!-- 修复：显式闭合 -->
-            <el-table-column prop="area" label="配送区域"></el-table-column> <!-- 修复：显式闭合 -->
-            <el-table-column prop="handler" label="处理人" width="120"></el-table-column> <!-- 修复：显式闭合 -->
-          </el-table>
+          <div class="chart-container">
+            <EchartsChart 
+              role="manager" 
+              :title="trendTitle" 
+              :xAxisData="monthOrderXData"  
+              :seriesData="monthOrderYData"
+              :seriesName="trendSeriesName"
+            />
+          </div>
         </el-card>
       </el-col>
-    </el-row>
-
-    <!-- 图表区域（核心修复：模板结构+组件标签+注释） -->
-    <el-row :gutter="20">
-      <el-col :span="14">
-        <el-card shadow="hover">
-          <template #header> <!-- 修复：缺失#header指令 -->
-            <span class="chart-title">月度总订单量趋势</span>
-          </template>
-          <EchartsChart 
-            role="manager" 
-            title="月度总订单量趋势" 
-            :xAxisData="monthOrderXData"  
-            :seriesData="monthOrderYData" 
-          ></EchartsChart> <!-- 修复：显式闭合组件 -->
-        </el-card>
-      </el-col>
-      <el-col :span="10">
-        <el-card shadow="hover">
+      <el-col :span="8">
+        <el-card shadow="hover" class="sub-chart-card">
           <template #header>
-            <span class="chart-title">订单类型分布</span>
+            <span class="card-title">配送业务构成</span>
           </template>
-          <EchartsChart 
-            role="warehouse" 
-            title="订单类型占比" 
-            :xAxisData="orderTypeXData"
-            :seriesData="orderTypeYData"
-          ></EchartsChart> <!-- 修复：显式闭合组件 -->
+          <div class="chart-container">
+            <EchartsChart 
+              role="warehouse" 
+              title="" 
+              :xAxisData="orderTypeXData"
+              :seriesData="orderTypeYData"
+            />
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -112,148 +87,260 @@
 </template>
 
 <script setup>
-// 保留原有导入 + 新增缺失的图标导入
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import axios from 'axios'
 import EchartsChart from '../components/EchartsChart.vue'
-import { ArrowUp, ArrowDown } from '@element-plus/icons-vue' // 修复：新增图标导入
+import { 
+  ArrowUp, ArrowDown, ShoppingCart, Check, Warning, Timer, 
+  Refresh, TrendCharts, List 
+} from '@element-plus/icons-vue'
 
-// 保留原有变量
-const currentDate = ref(new Date().toLocaleDateString())
+const currentDate = ref(new Date().toLocaleString())
+const selectedMonth = ref(new Date())
+const trendDimension = ref('order')
 
-// 新增：动态数据变量（替换原有静态值）
-const totalOrderNum = ref('2150')
+const trendTitle = computed(() => {
+  const monthStr = (selectedMonth.value.getMonth() + 1) + '月'
+  const typeStr = trendDimension.value === 'order' ? '订单量趋势' : '交易额趋势'
+  return `${monthStr}${typeStr}`
+})
+
+const trendSeriesName = computed(() => {
+  return trendDimension.value === 'order' ? '订单量' : '交易额(千元)'
+})
+
+const handleMonthChange = (val) => {
+  if (val) {
+    fetchManagerData()
+  }
+}
+
+// 核心指标数据
+const totalOrderNum = ref('2,150')
 const totalOrderTrend = ref('8.5%')
-const finishOrderNum = ref('2080')
+const finishOrderNum = ref('2,080')
 const finishOrderTrend = ref('5.2%')
 const exceptionOrderNum = ref('70')
 const exceptionOrderTrend = ref('3.1%')
 const avgDeliveryTime = ref('8.2h')
 const avgDeliveryTrend = ref('1.2%')
 
-// 新增：图表动态数据
+const kpiCards = computed(() => [
+  {
+    title: '总订单量',
+    value: totalOrderNum.value,
+    trendValue: totalOrderTrend.value,
+    trendText: '较上月',
+    trendType: 'trend-up',
+    trendIcon: ArrowUp,
+    icon: ShoppingCart,
+    iconColor: '#409eff',
+    bgColor: 'rgba(64, 158, 255, 0.1)',
+    progress: 85
+  },
+  {
+    title: '已完成订单',
+    value: finishOrderNum.value,
+    trendValue: finishOrderTrend.value,
+    trendText: '较昨日',
+    trendType: 'trend-up',
+    trendIcon: ArrowUp,
+    icon: Check,
+    iconColor: '#67c23a',
+    bgColor: 'rgba(103, 194, 58, 0.1)',
+    progress: 96
+  },
+  {
+    title: '异常待处理',
+    value: exceptionOrderNum.value,
+    trendValue: exceptionOrderTrend.value,
+    trendText: '较昨日',
+    trendType: 'trend-down',
+    trendIcon: ArrowDown,
+    icon: Warning,
+    iconColor: '#f56c6c',
+    bgColor: 'rgba(245, 108, 108, 0.1)',
+    progress: 12
+  },
+  {
+    title: '平均配送时效',
+    value: avgDeliveryTime.value,
+    trendValue: avgDeliveryTrend.value,
+    trendText: '较昨日',
+    trendType: 'trend-down',
+    trendIcon: ArrowDown,
+    icon: Timer,
+    iconColor: '#e6a23c',
+    bgColor: 'rgba(230, 162, 60, 0.1)',
+    progress: 78
+  }
+])
+
+// 图表数据
 const monthOrderXData = ref(['1月', '2月', '3月', '4月'])
 const monthOrderYData = ref([1200, 1580, 1820, 2150])
 const orderTypeXData = ref(['生鲜配送', '标品配送', '大件配送', '耗材配送'])
 const orderTypeYData = ref([650, 980, 320, 200])
 
-// 新增：异常订单列表
-const exceptionOrderList = ref([])
-
-// 新增：请求后端数据方法（核心修复：容错+超时+详细错误日志）
 const fetchManagerData = async () => {
   try {
-    // 修复1：添加超时配置，避免请求卡死
-    const res = await axios.get('http://localhost:5000/api/get_role_data', {
-      params: { role: 'manager' },
-      timeout: 10000 // 10秒超时
+    const res = await axios.get('http://localhost:5001/api/get_role_data', {
+      params: { 
+        role: 'manager',
+        month: selectedMonth.value.getMonth() + 1,
+        dimension: trendDimension.value
+      },
+      timeout: 10000
     })
 
-    // 修复2：严格判空，避免后端返回非预期格式报错
-    if (!res.data || res.data.code !== 200) {
-      console.warn('后端返回非预期数据：', res.data)
-      return
-    }
+    if (res.data && res.data.code === 200) {
+      const data = res.data.data || {}
+      
+      // 更新核心指标
+      if (data.core_indicators) {
+        totalOrderNum.value = data.core_indicators.total_order_num || '2,150'
+        totalOrderTrend.value = data.core_indicators.total_order_trend || '8.5%'
+        finishOrderNum.value = data.core_indicators.finish_order_num || '2,080'
+        finishOrderTrend.value = data.core_indicators.finish_order_trend || '5.2%'
+        exceptionOrderNum.value = data.core_indicators.exception_order_num || '70'
+        exceptionOrderTrend.value = data.core_indicators.exception_order_trend || '3.1%'
+        avgDeliveryTime.value = data.core_indicators.avg_delivery_time || '8.2h'
+        avgDeliveryTrend.value = data.core_indicators.avg_delivery_trend || '1.2%'
+      }
 
-    const data = res.data.data || {} // 修复3：默认空对象，避免undefined
-
-    // 1. 赋值核心指标
-    if (data.core_indicators) {
-      totalOrderNum.value = data.core_indicators.total_order_num || '2150'
-      totalOrderTrend.value = data.core_indicators.total_order_trend || '8.5%'
-      finishOrderNum.value = data.core_indicators.finish_order_num || '2080'
-      finishOrderTrend.value = data.core_indicators.finish_order_trend || '5.2%'
-      exceptionOrderNum.value = data.core_indicators.exception_order_num || '70'
-      exceptionOrderTrend.value = data.core_indicators.exception_order_trend || '3.1%'
-      avgDeliveryTime.value = data.core_indicators.avg_delivery_time || '8.2h'
-      avgDeliveryTrend.value = data.core_indicators.avg_delivery_trend || '1.2%'
-    }
-
-    // 2. 赋值异常订单列表（修复：数组判空）
-    exceptionOrderList.value = Array.isArray(data.exception_order_top5) ? data.exception_order_top5 : []
-
-    // 3. 赋值图表数据（修复：数组判空）
-    if (data.trend_data) {
-      monthOrderXData.value = Array.isArray(data.trend_data.xAxis) ? data.trend_data.xAxis : ['1月', '2月', '3月', '4月']
-      monthOrderYData.value = Array.isArray(data.trend_data.series) ? data.trend_data.series : [1200, 1580, 1820, 2150]
-    }
-    if (data.pie_data) {
-      orderTypeXData.value = Array.isArray(data.pie_data.xAxis) ? data.pie_data.xAxis : ['生鲜配送', '标品配送', '大件配送', '耗材配送']
-      orderTypeYData.value = Array.isArray(data.pie_data.series) ? data.pie_data.series : [650, 980, 320, 200]
+      if (data.trend_data) {
+        monthOrderXData.value = data.trend_data.xAxis || monthOrderXData.value
+        monthOrderYData.value = data.trend_data.series || monthOrderYData.value
+        console.log('ManagerView: 图表数据已更新', {
+          dimension: trendDimension.value,
+          xAxis: monthOrderXData.value,
+          series: monthOrderYData.value
+        })
+      }
+      if (data.pie_data) {
+        orderTypeXData.value = data.pie_data.xAxis || orderTypeXData.value
+        orderTypeYData.value = data.pie_data.series || orderTypeYData.value
+      }
     }
   } catch (err) {
-    // 修复4：详细打印错误信息，定位后端500原因
-    console.error('管理层数据请求失败（使用兜底数据）：', {
-      message: err.message,
-      response: err.response?.data, // 后端500详情
-      status: err.response?.status
-    })
-    // 失败仍用原有静态值，不影响页面显示
+    console.error('获取管理层数据失败:', err)
   }
 }
 
-// 新增：初始化请求
-onMounted(() => {
+watch(trendDimension, () => {
   fetchManagerData()
 })
+
+onMounted(fetchManagerData)
 </script>
 
 <style scoped>
-/* 保留所有原有样式，无修改 */
 .manager-view {
-  width: 100%;
-  height: 100%;
+  padding: 20px;
+  background-color: #f0f2f5;
+  min-height: calc(100vh - 60px);
 }
-.page-header {
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: #fff;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+}
+
+.dashboard-header .title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2f3d;
+}
+
+.dashboard-header .subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+.kpi-row {
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.kpi-card:hover {
+  transform: translateY(-4px);
+}
+
+.kpi-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.kpi-title {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.kpi-trend {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 4px;
+  font-size: 13px;
 }
-.page-header h2 {
-  margin: 0;
-  color: #333;
-  font-size: 20px;
+
+.trend-up { color: #f56c6c; }
+.trend-down { color: #67c23a; }
+
+.kpi-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
 }
-.date-text {
-  color: #666;
-  font-size: 14px;
+
+.chart-row {
+  margin-bottom: 24px;
 }
-.data-card {
-  height: 100%;
-  box-sizing: border-box;
-}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
 }
+
 .card-title {
-  font-size: 14px;
-  color: #666;
-}
-.card-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 10px;
-}
-.card-trend {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-}
-.trend-up {
-  color: #52c41a; /* Element Plus 2.x成功色 */
-}
-.trend-down {
-  color: #f5222d; /* Element Plus 2.x危险色 */
-}
-.chart-title {
   font-size: 16px;
-  color: #333;
-  font-weight: 500;
+  font-weight: 600;
+  color: #303133;
+}
+
+.chart-container {
+  height: 300px;
+}
+
+:deep(.el-card__header) {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f0f2f5;
 }
 </style>

@@ -1,13 +1,34 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import DispatcherView from '../views/DispatcherView.vue'
-import WarehouseView from '../views/WarehouseView.vue'
+import Login from '../views/Login.vue'
 import ManagerView from '../views/ManagerView.vue'
+import DispatcherView from '../views/DispatcherView.vue'
+import OrderManage from '../views/OrderManage.vue'
+import ReportDashboard from '../views/ReportDashboard.vue'
+import DriverManage from '../views/DriverManage.vue'
+import CustomerManage from '../views/CustomerManage.vue'
+import ServiceRequestManage from '../views/ServiceRequestManage.vue'
+import ShipmentPlanManage from '../views/ShipmentPlanManage.vue'
+import CustomerView from '../views/CustomerView.vue'
+import InboundOutboundManage from '../views/InboundOutboundManage.vue'
 
 const routes = [
-  { path: '/', redirect: '/manager' },
-  { path: '/dispatcher', name: 'Dispatcher', component: DispatcherView, meta: { title: '调度人员视图' } },
-  { path: '/warehouse', name: 'Warehouse', component: WarehouseView, meta: { title: '仓储管理员视图' } },
-  { path: '/manager', name: 'Manager', component: ManagerView, meta: { title: '管理层视图' } }
+  { path: '/login', name: 'Login', component: Login, meta: { title: '用户登录', hideMenu: true } },
+  { 
+    path: '/', 
+    redirect: '/manager',
+    children: [
+      { path: 'manager', name: 'Manager', component: ManagerView, meta: { title: '管理决策中心' } },
+      { path: 'dispatcher', name: 'Dispatcher', component: DispatcherView, meta: { title: '运输调度监控' } },
+      { path: 'orders', name: 'Orders', component: OrderManage, meta: { title: '订单全流程管理' } },
+      { path: 'customers', name: 'Customers', component: CustomerManage, meta: { title: '客户管理' } },
+      { path: 'drivers', name: 'Drivers', component: DriverManage, meta: { title: '司机管理' } },
+      { path: 'service-requests', name: 'ServiceRequests', component: ServiceRequestManage, meta: { title: '服务请求管理' } },
+      { path: 'shipment-plans', name: 'ShipmentPlans', component: ShipmentPlanManage, meta: { title: '装运计划管理' } },
+      { path: 'reports', name: 'Reports', component: ReportDashboard, meta: { title: '分析看板' } },
+      { path: 'customer', name: 'Customer', component: CustomerView, meta: { title: '客户中心' } },
+      { path: 'inbound-outbound', name: 'InboundOutbound', component: InboundOutboundManage, meta: { title: '出入库管理' } }
+    ]
+  }
 ]
 
 const router = createRouter({
@@ -15,14 +36,41 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫（纯前端）
+// 路由守卫
 router.beforeEach((to, from, next) => {
-  if (to.meta && to.meta.title) {
-    document.title = `${to.meta.title} - 物流管理数据可视化系统`
+  const token = localStorage.getItem('token')
+  const user = JSON.parse(localStorage.getItem('user'))
+  
+  if (to.name !== 'Login' && !token) {
+    next({ name: 'Login' })
+  } else if (to.name !== 'Login' && token && user) {
+    // 客户角色只能访问客户专属页面
+    if (user.role === 'customer') {
+      if (to.path === '/customer') {
+        next()
+      } else {
+        next({ name: 'Customer' })
+      }
+    } else {
+      // 管理员角色可以访问所有页面
+      if (to.meta && to.meta.title) {
+        document.title = `${to.meta.title} - 物流可视化系统`
+      }
+      next()
+    }
+  } else if (to.name === 'Login' && token && user) {
+    // 已登录用户访问登录页，根据角色跳转
+    if (user.role === 'customer') {
+      next({ name: 'Customer' })
+    } else {
+      next({ name: 'Manager' })
+    }
   } else {
-    document.title = '物流管理数据可视化系统'
+    if (to.meta && to.meta.title) {
+      document.title = `${to.meta.title} - 物流可视化系统`
+    }
+    next()
   }
-  next()
 })
 
 export default router
