@@ -33,9 +33,9 @@
       </el-col>
     </el-row>
 
-    <!-- 中间数据层：异常监控 + 趋势分析 -->
+    <!-- 中间数据层：趋势分析 -->
     <el-row :gutter="20" class="chart-row">
-      <el-col :span="16">
+      <el-col :span="24">
         <el-card shadow="hover" class="main-chart-card">
           <template #header>
             <div class="card-header">
@@ -63,21 +63,6 @@
               :xAxisData="monthOrderXData"  
               :seriesData="monthOrderYData"
               :seriesName="trendSeriesName"
-            />
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="sub-chart-card">
-          <template #header>
-            <span class="card-title">配送业务构成</span>
-          </template>
-          <div class="chart-container">
-            <EchartsChart 
-              role="warehouse" 
-              title="" 
-              :xAxisData="orderTypeXData"
-              :seriesData="orderTypeYData"
             />
           </div>
         </el-card>
@@ -179,8 +164,8 @@ const kpiCards = computed(() => [
 // 图表数据
 const monthOrderXData = ref(['1月', '2月', '3月', '4月'])
 const monthOrderYData = ref([1200, 1580, 1820, 2150])
-const orderTypeXData = ref(['生鲜配送', '标品配送', '大件配送', '耗材配送'])
-const orderTypeYData = ref([650, 980, 320, 200])
+const orderTypeXData = ref(['普通货物', '生鲜食品', '电子产品', '危险品', '贵重物品', '大件货物'])
+const orderTypeYData = ref([35, 25, 20, 10, 5, 5])
 
 const fetchManagerData = async () => {
   try {

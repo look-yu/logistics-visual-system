@@ -280,6 +280,84 @@ const StockModel = {
         msg: '补货提醒发送失败（已兜底模拟更新）：${error.message}'
       };
     }
+  },
+
+  /**
+   * 获取仓储统计数据
+   * @returns {Object} 符合架构规范的响应格式：{code, data, msg}
+   */
+  getWarehouseStats: async () => {
+    try {
+      const statsSql = `
+        SELECT 
+          COUNT(*) as total_goods,
+          SUM(current_stock) as total_stock,
+          SUM(CASE WHEN status = '预警' THEN 1 ELSE 0 END) as warning_count,
+          SUM(CASE WHEN status = '缺货' THEN 1 ELSE 0 END) as shortage_count,
+          SUM(CASE WHEN status = '正常' THEN 1 ELSE 0 END) as normal_count,
+          AVG(current_stock) as avg_stock,
+          MAX(current_stock) as max_stock,
+          MIN(current_stock) as min_stock
+        FROM goods_stock
+        WHERE is_delete = 0
+      `;
+      const [statsResult] = await query(statsSql);
+      
+      const stats = statsResult[0] || {};
+
+      const inOutSql = `
+        SELECT 
+          COUNT(CASE WHEN operate_type = '入库' THEN 1 END) as today_inbound,
+          COUNT(CASE WHEN operate_type = '出库' THEN 1 END) as today_outbound,
+          SUM(CASE WHEN operate_type = '入库' THEN operate_num ELSE 0 END) as today_inbound_qty,
+          SUM(CASE WHEN operate_type = '出库' THEN operate_num ELSE 0 END) as today_outbound_qty
+        FROM in_out_record
+        WHERE DATE(create_time) = CURDATE()
+      `;
+      const [inOutResult] = await query(inOutSql);
+      
+      const inOutStats = inOutResult[0] || {};
+
+      return {
+        code: 200,
+        data: {
+          totalGoods: stats.total_goods || 0,
+          totalStock: stats.total_stock || 0,
+          warningCount: stats.warning_count || 0,
+          shortageCount: stats.shortage_count || 0,
+          normalCount: stats.normal_count || 0,
+          avgStock: Math.round(stats.avg_stock || 0),
+          maxStock: stats.max_stock || 0,
+          minStock: stats.min_stock || 0,
+          todayInbound: inOutStats.today_inbound || 0,
+          todayOutbound: inOutStats.today_outbound || 0,
+          todayInboundQty: inOutStats.today_inbound_qty || 0,
+          todayOutboundQty: inOutStats.today_outbound_qty || 0
+        },
+        msg: '获取统计数据成功'
+      };
+    } catch (error) {
+      console.error('[StockModel] 获取统计数据异常：', error.message);
+      
+      return {
+        code: 500,
+        data: {
+          totalGoods: 4,
+          totalStock: 1145,
+          warningCount: 2,
+          shortageCount: 1,
+          normalCount: 1,
+          avgStock: 286,
+          maxStock: 600,
+          minStock: 15,
+          todayInbound: 2,
+          todayOutbound: 2,
+          todayInboundQty: 80,
+          todayOutboundQty: 35
+        },
+        msg: `获取统计数据失败（已兜底模拟数据）：${error.message}`
+      };
+    }
   }
 };
 

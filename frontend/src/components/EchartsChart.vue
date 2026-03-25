@@ -41,9 +41,14 @@ const props = defineProps({
     default: 'manager',
     validator: (val) => ['manager', 'dispatcher', 'warehouse', 'track'].includes(val)
   },
+  chartType: {
+    type: String,
+    default: 'line',
+    validator: (val) => ['line', 'bar', 'pie', 'gauge'].includes(val)
+  },
   title: { type: String, default: '物流数据可视化' },
   xAxisData: { type: Array, default: () => [] },
-  seriesData: { type: Array, default: () => [] },
+  seriesData: { type: [Array, Object], default: () => [] },
   seriesName: { type: String, default: '订单量' },
   trackPoints: { 
     type: Array, 
@@ -189,7 +194,7 @@ const updateChart = (chartInstance) => {
   }
 
   // 仓储管理员：饼图（增加无数据兜底）
-  if (props.role === 'warehouse') {
+  if (props.role === 'warehouse' && props.chartType === 'pie') {
     if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
       option = noDataOption
     } else {
@@ -236,6 +241,85 @@ const updateChart = (chartInstance) => {
             length2: 10,
             smooth: true
           }
+        }]
+      }
+    }
+  }
+
+  // 仓储管理员：仪表盘（增加无数据兜底）
+  if (props.role === 'warehouse' && props.chartType === 'gauge') {
+    if (!props.seriesData || props.seriesData.value === undefined) {
+      option = noDataOption
+    } else {
+      const data = props.seriesData.value !== undefined ? props.seriesData.value : props.seriesData
+      option = {
+        title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
+        series: [{
+          type: 'gauge',
+          startAngle: 180,
+          endAngle: 0,
+          min: 0,
+          max: 100,
+          splitNumber: 5,
+          itemStyle: {
+            color: '#409EFF',
+            shadowColor: 'rgba(0,0,0,0.45)',
+            shadowBlur: 10,
+            shadowOffsetX: 2,
+            shadowOffsetY: 2
+          },
+          progress: {
+            show: true,
+            roundCap: true,
+            width: 18
+          },
+          pointer: {
+            itemStyle: {
+              color: 'auto'
+            }
+          },
+          axisLine: {
+            lineStyle: {
+              width: 18,
+              color: [[0.3, '#67C23A'], [0.7, '#E6A23C'], [1, '#F56C6C']],
+              shadowColor: 'rgba(0,0,0,0.45)',
+              shadowBlur: 10,
+              shadowOffsetX: 2,
+              shadowOffsetY: 2
+            }
+          },
+          axisTick: {
+            distance: -18,
+            length: 5,
+            lineStyle: {
+              color: '#fff',
+              width: 2
+            }
+          },
+          splitLine: {
+            distance: -22,
+            length: 14,
+            lineStyle: {
+              color: '#fff',
+              width: 4
+            }
+          },
+          axisLabel: {
+            color: 'inherit',
+            distance: 30,
+            fontSize: 12
+          },
+          detail: {
+            valueAnimation: true,
+            formatter: '{value}%',
+            color: 'inherit',
+            fontSize: 24,
+            offsetCenter: [0, '70%']
+          },
+          data: [{
+            value: data.value || 0,
+            name: '健康度'
+          }]
         }]
       }
     }

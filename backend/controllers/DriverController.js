@@ -11,8 +11,8 @@ class DriverController {
           COUNT(DISTINCT tt.id) as current_task_count,
           v.car_no as current_vehicle
         FROM drivers d
-        LEFT JOIN transport_tasks tt ON d.id = tt.driver_id AND tt.status IN ('pending', 'in_transit')
-        LEFT JOIN vehicles v ON d.id = v.driver_id AND v.status = 'busy'
+        LEFT JOIN vehicles v ON d.driver_name = v.driver_name
+        LEFT JOIN transport_tasks tt ON v.id = tt.vehicle_id AND tt.status IN ('pending', 'in_transit')
         WHERE 1=1
       `;
       const params = [];
@@ -62,13 +62,10 @@ class DriverController {
       const [drivers] = await db.query(`
         SELECT 
           d.*,
-          (SELECT COUNT(*) FROM transport_tasks WHERE driver_id = d.id) as total_tasks,
-          (SELECT COUNT(*) FROM transport_tasks WHERE driver_id = d.id AND status = 'completed') as completed_tasks,
-          (SELECT COUNT(*) FROM transport_tasks WHERE driver_id = d.id AND status IN ('pending', 'in_transit')) as active_tasks,
           v.car_no as current_vehicle,
           v.status as vehicle_status
         FROM drivers d
-        LEFT JOIN vehicles v ON d.id = v.driver_id
+        LEFT JOIN vehicles v ON d.driver_name = v.driver_name
         WHERE d.id = ?
       `, [id]);
       
@@ -80,10 +77,26 @@ class DriverController {
         });
       }
       
+      const driver = drivers[0];
+      
+      const [taskCounts] = await db.query(`
+        SELECT 
+          COUNT(*) as total_tasks,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
+          SUM(CASE WHEN status IN ('pending', 'in_transit') THEN 1 ELSE 0 END) as active_tasks
+        FROM transport_tasks tt
+        JOIN vehicles v ON tt.vehicle_id = v.id
+        WHERE v.driver_name = ?
+      `, [driver.driver_name]);
+      
+      driver.total_tasks = taskCounts[0].total_tasks || 0;
+      driver.completed_tasks = taskCounts[0].completed_tasks || 0;
+      driver.active_tasks = taskCounts[0].active_tasks || 0;
+      
       res.json({
         code: 200,
         msg: 'success',
-        data: drivers[0]
+        data: driver
       });
     } catch (err) {
       console.error('获取司机详情失败:', err);
@@ -97,19 +110,19 @@ class DriverController {
 
   async createDriver(req, res) {
     try {
+      console.log('收到的请求数据:', req.body);
+      
       const {
         driver_name,
         phone,
         id_card,
         license_no,
         license_type,
-        license_expire_date,
-        address,
-        emergency_contact,
-        emergency_phone,
         hire_date,
         avatar
       } = req.body;
+      
+      console.log('解构后的数据:', { driver_name, phone, id_card, license_no, license_type, hire_date, avatar });
       
       if (!driver_name || !phone) {
         return res.json({
@@ -122,14 +135,19 @@ class DriverController {
       const [result] = await db.query(`
         INSERT INTO drivers (
           driver_name, phone, id_card, license_no, license_type,
-          license_expire_date, address, emergency_contact, emergency_phone,
           hire_date, avatar
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `, [
-        driver_name, phone, id_card, license_no, license_type,
-        license_expire_date, address, emergency_contact, emergency_phone,
-        hire_date, avatar
+        driver_name, 
+        phone, 
+        id_card || null, 
+        license_no || null, 
+        license_type || null,
+        hire_date || null,
+        avatar || null
       ]);
+      
+      console.log('插入结果:', result);
       
       res.json({
         code: 200,
@@ -245,15 +263,25 @@ class DriverController {
     try {
       const { id } = req.params;
       
+      const [driver] = await db.query('SELECT driver_name FROM drivers WHERE id = ?', [id]);
+      
+      if (driver.length === 0) {
+        return res.json({
+          code: 404,
+          msg: '司机不存在',
+          data: []
+        });
+      }
+      
       const [vehicles] = await db.query(`
         SELECT 
           v.*,
           d.driver_name
         FROM vehicles v
-        LEFT JOIN drivers d ON v.driver_id = d.id
-        WHERE v.driver_id = ?
+        LEFT JOIN drivers d ON v.driver_name = d.driver_name
+        WHERE v.driver_name = ?
         ORDER BY v.create_time DESC
-      `, [id]);
+      `, [driver[0].driver_name]);
       
       res.json({
         code: 200,

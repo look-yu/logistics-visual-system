@@ -34,6 +34,10 @@
               <el-icon><Van /></el-icon>
               <span>司机管理</span>
             </el-menu-item>
+            <el-menu-item index="/warehouse">
+              <el-icon><Box /></el-icon>
+              <span>仓储管理</span>
+            </el-menu-item>
             <el-menu-item index="/reports">
               <el-icon><PieChart /></el-icon>
               <span>分析看板</span>

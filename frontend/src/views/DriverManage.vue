@@ -28,26 +28,10 @@
         <el-table-column prop="id_card" label="身份证号" width="180" />
         <el-table-column prop="license_no" label="驾驶证号" width="150" />
         <el-table-column prop="license_type" label="驾驶证类型" width="100" />
-        <el-table-column prop="license_expire_date" label="驾驶证到期日期" width="130" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="statusTypeMap[row.status]">{{ statusNameMap[row.status] }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="current_vehicle" label="当前车辆" width="120" />
-        <el-table-column prop="current_task_count" label="当前任务数" width="100" />
-        <el-table-column prop="total_orders" label="总订单数" width="100" />
-        <el-table-column prop="rating" label="评分" width="80">
-          <template #default="{ row }">
-            <el-rate v-model="row.rating" disabled show-score text-color="#ff9900" score-template="{value}" />
-          </template>
-        </el-table-column>
         <el-table-column prop="hire_date" label="入职日期" width="120" />
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleDetail(row)">详情</el-button>
-            <el-button link type="success" @click="handleVehicles(row)">车辆</el-button>
-            <el-button link type="warning" @click="handleTasks(row)">任务</el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -65,7 +49,6 @@
 
     <el-dialog v-model="showAddDialog" title="新增司机" width="700px">
       <el-form :model="driverForm" label-width="120px" :rules="driverRules" ref="driverFormRef">
-        <el-divider content-position="left">基本信息</el-divider>
         <el-form-item label="司机姓名" prop="driver_name">
           <el-input v-model="driverForm.driver_name" placeholder="请输入司机姓名" />
         </el-form-item>
@@ -75,10 +58,6 @@
         <el-form-item label="身份证号" prop="id_card">
           <el-input v-model="driverForm.id_card" placeholder="请输入身份证号" />
         </el-form-item>
-        <el-form-item label="家庭住址" prop="address">
-          <el-input v-model="driverForm.address" placeholder="请输入家庭住址" />
-        </el-form-item>
-        <el-divider content-position="left">驾驶证信息</el-divider>
         <el-form-item label="驾驶证号" prop="license_no">
           <el-input v-model="driverForm.license_no" placeholder="请输入驾驶证号" />
         </el-form-item>
@@ -91,17 +70,6 @@
             <el-option label="C1" value="C1" />
           </el-select>
         </el-form-item>
-        <el-form-item label="驾驶证到期日期" prop="license_expire_date">
-          <el-date-picker v-model="driverForm.license_expire_date" type="date" placeholder="选择到期日期" style="width: 100%" />
-        </el-form-item>
-        <el-divider content-position="left">紧急联系人</el-divider>
-        <el-form-item label="紧急联系人" prop="emergency_contact">
-          <el-input v-model="driverForm.emergency_contact" placeholder="请输入紧急联系人姓名" />
-        </el-form-item>
-        <el-form-item label="紧急联系电话" prop="emergency_phone">
-          <el-input v-model="driverForm.emergency_phone" placeholder="请输入紧急联系电话" />
-        </el-form-item>
-        <el-divider content-position="left">其他信息</el-divider>
         <el-form-item label="入职日期" prop="hire_date">
           <el-date-picker v-model="driverForm.hire_date" type="date" placeholder="选择入职日期" style="width: 100%" />
         </el-form-item>
@@ -112,78 +80,17 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showDetailDialog" title="司机详情" width="800px">
+    <el-dialog v-model="showDetailDialog" title="司机详情" width="600px">
       <el-descriptions :column="2" border v-if="currentDriver">
         <el-descriptions-item label="司机姓名">{{ currentDriver.driver_name }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ currentDriver.phone }}</el-descriptions-item>
         <el-descriptions-item label="身份证号">{{ currentDriver.id_card }}</el-descriptions-item>
         <el-descriptions-item label="驾驶证号">{{ currentDriver.license_no }}</el-descriptions-item>
         <el-descriptions-item label="驾驶证类型">{{ currentDriver.license_type }}</el-descriptions-item>
-        <el-descriptions-item label="驾驶证到期日期">{{ currentDriver.license_expire_date }}</el-descriptions-item>
-        <el-descriptions-item label="家庭住址">{{ currentDriver.address }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="statusTypeMap[currentDriver.status]">{{ statusNameMap[currentDriver.status] }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="紧急联系人">{{ currentDriver.emergency_contact }}</el-descriptions-item>
-        <el-descriptions-item label="紧急联系电话">{{ currentDriver.emergency_phone }}</el-descriptions-item>
         <el-descriptions-item label="入职日期">{{ currentDriver.hire_date }}</el-descriptions-item>
-        <el-descriptions-item label="当前车辆">{{ currentDriver.current_vehicle || '无' }}</el-descriptions-item>
-        <el-descriptions-item label="总订单数">{{ currentDriver.total_orders }}</el-descriptions-item>
-        <el-descriptions-item label="已完成订单">{{ currentDriver.completed_tasks }}</el-descriptions-item>
-        <el-descriptions-item label="进行中订单">{{ currentDriver.active_tasks }}</el-descriptions-item>
-        <el-descriptions-item label="总行驶里程">{{ currentDriver.total_mileage }} 公里</el-descriptions-item>
-        <el-descriptions-item label="评分" :span="2">
-          <el-rate v-model="currentDriver.rating" disabled show-score text-color="#ff9900" score-template="{value}" />
-        </el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button type="primary" @click="showDetailDialog = false">关闭</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="showVehiclesDialog" title="司机车辆信息" width="900px">
-      <el-table :data="vehicleList" border stripe v-loading="vehiclesLoading">
-        <el-table-column prop="car_no" label="车牌号" width="120" />
-        <el-table-column prop="driver_name" label="司机" width="100" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="vehicleStatusTypeMap[row.status]">{{ vehicleStatusNameMap[row.status] }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="current_area" label="当前位置" />
-        <el-table-column prop="load_capacity" label="载重(吨)" width="100" />
-        <el-table-column prop="create_time" label="创建时间" width="180" />
-      </el-table>
-      <template #footer>
-        <el-button type="primary" @click="showVehiclesDialog = false">关闭</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="showTasksDialog" title="司机任务列表" width="1000px">
-      <el-table :data="taskList" border stripe v-loading="tasksLoading">
-        <el-table-column prop="task_no" label="任务编号" width="150" />
-        <el-table-column prop="order_no" label="订单号" width="150" />
-        <el-table-column prop="customer_name" label="客户" width="120" />
-        <el-table-column prop="car_no" label="车辆" width="100" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="taskStatusTypeMap[row.status]">{{ taskStatusNameMap[row.status] }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="start_time" label="开始时间" width="180" />
-        <el-table-column prop="end_time" label="结束时间" width="180" />
-        <el-table-column prop="cost" label="费用" width="100" />
-      </el-table>
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="taskQueryParams.page"
-          :total="taskTotal"
-          layout="total, prev, pager, next"
-          @current-change="handleQueryTasks"
-        />
-      </div>
-      <template #footer>
-        <el-button type="primary" @click="showTasksDialog = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -199,22 +106,11 @@ const driverList = ref([])
 const total = ref(0)
 const showAddDialog = ref(false)
 const showDetailDialog = ref(false)
-const showVehiclesDialog = ref(false)
-const showTasksDialog = ref(false)
 const currentDriver = ref(null)
-const vehicleList = ref([])
-const taskList = ref([])
-const vehiclesLoading = ref(false)
-const tasksLoading = ref(false)
-const taskTotal = ref(0)
 
 const queryParams = reactive({
   keyword: '',
   status: '',
-  page: 1
-})
-
-const taskQueryParams = reactive({
   page: 1
 })
 
@@ -224,10 +120,6 @@ const driverForm = reactive({
   id_card: '',
   license_no: '',
   license_type: '',
-  license_expire_date: '',
-  address: '',
-  emergency_contact: '',
-  emergency_phone: '',
   hire_date: '',
   status: 'active'
 })
@@ -247,25 +139,6 @@ const statusNameMap = {
   active: '在职',
   inactive: '离职',
   on_leave: '请假'
-}
-
-const vehicleStatusTypeMap = {
-  idle: 'success',
-  busy: 'danger',
-  maintenance: 'warning'
-}
-
-const vehicleStatusNameMap = {
-  idle: '空闲',
-  busy: '在途',
-  maintenance: '维修'
-}
-
-const taskStatusTypeMap = {
-  pending: 'warning',
-  in_transit: 'primary',
-  completed: 'success',
-  failed: 'danger'
 }
 
 const taskStatusNameMap = {
@@ -300,10 +173,6 @@ const openAddDialog = () => {
     id_card: '',
     license_no: '',
     license_type: '',
-    license_expire_date: '',
-    address: '',
-    emergency_contact: '',
-    emergency_phone: '',
     hire_date: '',
     status: 'active'
   })
@@ -312,7 +181,25 @@ const openAddDialog = () => {
 
 const handleSave = async () => {
   try {
-    const res = await axios.post('http://localhost:5001/api/drivers', driverForm)
+    const formData = {
+      driver_name: driverForm.driver_name || null,
+      phone: driverForm.phone || null,
+      id_card: driverForm.id_card || null,
+      license_no: driverForm.license_no || null,
+      license_type: driverForm.license_type || null,
+      hire_date: null
+    }
+    
+    if (driverForm.hire_date && driverForm.hire_date instanceof Date) {
+      const year = driverForm.hire_date.getFullYear()
+      const month = String(driverForm.hire_date.getMonth() + 1).padStart(2, '0')
+      const day = String(driverForm.hire_date.getDate()).padStart(2, '0')
+      formData.hire_date = `${year}-${month}-${day}`
+    }
+    
+    console.log('提交的司机数据:', formData)
+    
+    const res = await axios.post('http://localhost:5001/api/drivers', formData)
     if (res.data.code === 200) {
       ElMessage.success('保存成功')
       showAddDialog.value = false
@@ -326,58 +213,9 @@ const handleSave = async () => {
   }
 }
 
-const handleDetail = async (row) => {
-  try {
-    const res = await axios.get(`http://localhost:5001/api/drivers/${row.id}`)
-    if (res.data.code === 200) {
-      currentDriver.value = res.data.data
-      showDetailDialog.value = true
-    }
-  } catch (error) {
-    console.error('获取司机详情失败:', error)
-    ElMessage.error('获取司机详情失败')
-  }
-}
-
-const handleVehicles = async (row) => {
-  vehiclesLoading.value = true
-  try {
-    const res = await axios.get(`http://localhost:5001/api/drivers/${row.id}/vehicles`)
-    if (res.data.code === 200) {
-      vehicleList.value = res.data.data
-      showVehiclesDialog.value = true
-    }
-  } catch (error) {
-    console.error('获取司机车辆信息失败:', error)
-    ElMessage.error('获取司机车辆信息失败')
-  } finally {
-    vehiclesLoading.value = false
-  }
-}
-
-const handleTasks = async (row) => {
-  tasksLoading.value = true
-  try {
-    const res = await axios.get(`http://localhost:5001/api/drivers/${row.id}/tasks`, {
-      params: taskQueryParams
-    })
-    if (res.data.code === 200) {
-      taskList.value = res.data.data.list
-      taskTotal.value = res.data.data.total
-      showTasksDialog.value = true
-    }
-  } catch (error) {
-    console.error('获取司机任务列表失败:', error)
-    ElMessage.error('获取司机任务列表失败')
-  } finally {
-    tasksLoading.value = false
-  }
-}
-
-const handleQueryTasks = async () => {
-  if (currentDriver.value) {
-    handleTasks(currentDriver.value)
-  }
+const handleDetail = (row) => {
+  currentDriver.value = row
+  showDetailDialog.value = true
 }
 
 const handleDelete = async (row) => {

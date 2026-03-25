@@ -10,9 +10,23 @@ import ServiceRequestManage from '../views/ServiceRequestManage.vue'
 import ShipmentPlanManage from '../views/ShipmentPlanManage.vue'
 import CustomerView from '../views/CustomerView.vue'
 import InboundOutboundManage from '../views/InboundOutboundManage.vue'
+import WarehouseManage from '../views/WarehouseManage.vue'
+import CustomerRegister from '../views/CustomerRegister.vue'
+import CustomerLogin from '../views/CustomerLogin.vue'
+import CustomerOrder from '../views/CustomerOrder.vue'
+import CustomerHome from '../views/CustomerHome.vue'
+import MyOrders from '../views/MyOrders.vue'
+import Profile from '../views/Profile.vue'
+import OrderDetail from '../views/OrderDetail.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { title: '用户登录', hideMenu: true } },
+  { path: '/customer-register', name: 'CustomerRegister', component: CustomerRegister, meta: { title: '客户注册', hideMenu: true } },
+  { path: '/customer-home', name: 'CustomerHome', component: CustomerHome, meta: { title: '客户首页', hideMenu: true } },
+  { path: '/customer-order', name: 'CustomerOrder', component: CustomerOrder, meta: { title: '客户下单', hideMenu: true } },
+  { path: '/my-orders', name: 'MyOrders', component: MyOrders, meta: { title: '我的订单', hideMenu: true } },
+  { path: '/profile', name: 'Profile', component: Profile, meta: { title: '个人中心', hideMenu: true } },
+  { path: '/order-detail/:id', name: 'OrderDetail', component: OrderDetail, meta: { title: '订单详情', hideMenu: true } },
   { 
     path: '/', 
     redirect: '/manager',
@@ -26,7 +40,8 @@ const routes = [
       { path: 'shipment-plans', name: 'ShipmentPlans', component: ShipmentPlanManage, meta: { title: '装运计划管理' } },
       { path: 'reports', name: 'Reports', component: ReportDashboard, meta: { title: '分析看板' } },
       { path: 'customer', name: 'Customer', component: CustomerView, meta: { title: '客户中心' } },
-      { path: 'inbound-outbound', name: 'InboundOutbound', component: InboundOutboundManage, meta: { title: '出入库管理' } }
+      { path: 'inbound-outbound', name: 'InboundOutbound', component: InboundOutboundManage, meta: { title: '出入库管理' } },
+      { path: 'warehouse', name: 'Warehouse', component: WarehouseManage, meta: { title: '仓储管理' } }
     ]
   }
 ]
@@ -39,9 +54,22 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user'))
+  const userStr = localStorage.getItem('user')
+  const user = userStr ? JSON.parse(userStr) : null
+  const customerStr = localStorage.getItem('customer')
+  const customer = customerStr ? JSON.parse(customerStr) : null
   
-  if (to.name !== 'Login' && !token) {
+  const customerRoutes = ['CustomerRegister', 'CustomerHome', 'CustomerOrder', 'MyOrders', 'Profile', 'OrderDetail']
+  
+  if (customerRoutes.includes(to.name)) {
+    if (to.name === 'CustomerHome' && !customer) {
+      next({ name: 'Login' })
+    } else if ((to.name === 'MyOrders' || to.name === 'Profile' || to.name === 'OrderDetail') && !customer) {
+      next({ name: 'Login' })
+    } else {
+      next()
+    }
+  } else if (to.name !== 'Login' && !token) {
     next({ name: 'Login' })
   } else if (to.name !== 'Login' && token && user) {
     // 客户角色只能访问客户专属页面

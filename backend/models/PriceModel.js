@@ -7,12 +7,12 @@ class PriceModel {
     weight_price: 2.0,
     volume_price: 50.0,
     goods_type_multiplier: {
-      '普通货物': 1.0,
-      '生鲜食品': 1.5,
-      '电子产品': 1.3,
-      '危险品': 2.0,
-      '贵重物品': 2.5,
-      '大件货物': 1.8
+      'normal': 1.0,
+      'fresh': 1.5,
+      'electronics': 1.3,
+      'dangerous': 2.0,
+      'valuable': 2.5,
+      'large': 1.8
     }
   };
 
@@ -27,7 +27,7 @@ class PriceModel {
           base_price: rows[0].base_price,
           weight_price: rows[0].weight_price,
           volume_price: rows[0].volume_price,
-          goods_type_multiplier: JSON.parse(rows[0].goods_type_multiplier)
+          goods_type_multiplier: rows[0].goods_type_multiplier
         };
       }
       

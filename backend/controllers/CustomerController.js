@@ -267,6 +267,206 @@ class CustomerController {
       res.json({
         code: 500,
         msg: '获取客户统计失败',
+        data: { stats: {}, recent_customers: [] }
+      });
+    }
+  }
+
+  async getAddressList(req, res) {
+    try {
+      const { customer_id } = req.params;
+      
+      if (!customer_id) {
+        return res.json({
+          code: 400,
+          msg: '客户ID不能为空',
+          data: []
+        });
+      }
+      
+      const [addresses] = await db.query(
+        'SELECT * FROM customer_addresses WHERE customer_id = ? ORDER BY is_default DESC, create_time DESC',
+        [customer_id]
+      );
+      
+      res.json({
+        code: 200,
+        msg: 'success',
+        data: addresses
+      });
+    } catch (err) {
+      console.error('获取收货地址失败:', err);
+      res.json({
+        code: 500,
+        msg: '获取收货地址失败',
+        data: []
+      });
+    }
+  }
+
+  async addAddress(req, res) {
+    try {
+      const { customer_id, receiver_name, phone, province, city, district, detail_address, is_default } = req.body;
+      
+      if (!customer_id || !receiver_name || !phone || !province || !city || !district || !detail_address) {
+        return res.json({
+          code: 400,
+          msg: '参数不完整',
+          data: null
+        });
+      }
+      
+      let sql = `
+        INSERT INTO customer_addresses (
+          customer_id, receiver_name, phone, province, city, district, detail_address, is_default
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+      const params = [customer_id, receiver_name, phone, province, city, district, detail_address, is_default ? 1 : 0];
+      
+      if (is_default) {
+        await db.query(
+          'UPDATE customer_addresses SET is_default = 0 WHERE customer_id = ?',
+          [customer_id]
+        );
+      }
+      
+      await db.query(sql, params);
+      
+      res.json({
+        code: 200,
+        msg: '添加成功',
+        data: null
+      });
+    } catch (err) {
+      console.error('添加收货地址失败:', err);
+      res.json({
+        code: 500,
+        msg: '添加收货地址失败',
+        data: null
+      });
+    }
+  }
+
+  async updateAddress(req, res) {
+    try {
+      const { id } = req.params;
+      const { receiver_name, phone, province, city, district, detail_address, is_default } = req.body;
+      
+      if (!id || !receiver_name || !phone || !province || !city || !district || !detail_address) {
+        return res.json({
+          code: 400,
+          msg: '参数不完整',
+          data: null
+        });
+      }
+      
+      const [address] = await db.query('SELECT customer_id FROM customer_addresses WHERE id = ?', [id]);
+      
+      if (address.length === 0) {
+        return res.json({
+          code: 404,
+          msg: '地址不存在',
+          data: null
+        });
+      }
+      
+      if (is_default) {
+        await db.query(
+          'UPDATE customer_addresses SET is_default = 0 WHERE customer_id = ? AND id != ?',
+          [address[0].customer_id, id]
+        );
+      }
+      
+      const sql = `
+        UPDATE customer_addresses SET
+          receiver_name = ?,
+          phone = ?,
+          province = ?,
+          city = ?,
+          district = ?,
+          detail_address = ?,
+          is_default = ?
+        WHERE id = ?
+      `;
+      
+      await db.query(sql, [receiver_name, phone, province, city, district, detail_address, is_default ? 1 : 0, id]);
+      
+      res.json({
+        code: 200,
+        msg: '修改成功',
+        data: null
+      });
+    } catch (err) {
+      console.error('更新收货地址失败:', err);
+      res.json({
+        code: 500,
+        msg: '更新收货地址失败',
+        data: null
+      });
+    }
+  }
+
+  async deleteAddress(req, res) {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        return res.json({
+          code: 400,
+          msg: '地址ID不能为空',
+          data: null
+        });
+      }
+      
+      await db.query('DELETE FROM customer_addresses WHERE id = ?', [id]);
+      
+      res.json({
+        code: 200,
+        msg: '删除成功',
+        data: null
+      });
+    } catch (err) {
+      console.error('删除收货地址失败:', err);
+      res.json({
+        code: 500,
+        msg: '删除收货地址失败',
+        data: null
+      });
+    }
+  }
+
+  async setDefaultAddress(req, res) {
+    try {
+      const { customer_id, address_id } = req.params;
+      
+      if (!customer_id || !address_id) {
+        return res.json({
+          code: 400,
+          msg: '参数不完整',
+          data: null
+        });
+      }
+      
+      await db.query(
+        'UPDATE customer_addresses SET is_default = 0 WHERE customer_id = ?',
+        [customer_id]
+      );
+      
+      await db.query(
+        'UPDATE customer_addresses SET is_default = 1 WHERE id = ? AND customer_id = ?',
+        [address_id, customer_id]
+      );
+      
+      res.json({
+        code: 200,
+        msg: '设置成功',
+        data: null
+      });
+    } catch (err) {
+      console.error('设置默认地址失败:', err);
+      res.json({
+        code: 500,
+        msg: '设置默认地址失败',
         data: null
       });
     }

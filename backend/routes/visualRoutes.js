@@ -12,6 +12,8 @@ const ServiceRequestController = require('../controllers/ServiceRequestControlle
 const ShipmentPlanController = require('../controllers/ShipmentPlanController');
 const InboundOutboundController = require('../controllers/InboundOutboundController');
 const TransportQueueController = require('../controllers/TransportQueueController');
+const WarehouseController = require('../controllers/WarehouseController');
+const AuthController = require('../controllers/AuthController');
 
 // ========== 用户管理路由 ==========
 router.post('/login', UserController.login);
@@ -23,8 +25,17 @@ router.delete('/users/:id', UserController.deleteUser);
 // ========== 订单管理路由 ==========
 router.get('/orders', OrderController.getOrderList);
 router.post('/orders', OrderController.createOrder);
+router.post('/orders/customer', OrderController.customerCreateOrder);
 router.get('/orders/:id', OrderController.getOrderDetail);
 router.put('/orders/:id/status', OrderController.updateOrderStatus);
+router.put('/orders/:id/sign', OrderController.signOrder);
+router.put('/orders/:id/cancel', OrderController.cancelOrder);
+router.get('/orders/:id/driver', OrderController.getOrderDriver);
+
+// ========== 客户认证路由 ==========
+router.post('/auth/register', AuthController.register);
+router.post('/auth/login', AuthController.login);
+router.put('/auth/customers/:id/password', AuthController.updatePassword);
 
 // ========== 价格管理路由 ==========
 router.get('/price/config', PriceController.getPriceConfig);
@@ -53,6 +64,11 @@ router.post('/customers', CustomerController.createCustomer);
 router.put('/customers/:id', CustomerController.updateCustomer);
 router.delete('/customers/:id', CustomerController.deleteCustomer);
 router.get('/customers/stats', CustomerController.getCustomerStats);
+router.get('/customers/:id/addresses', CustomerController.getAddressList);
+router.post('/customers/:id/addresses', CustomerController.addAddress);
+router.put('/customers/:id/addresses/:id', CustomerController.updateAddress);
+router.delete('/customers/:id/addresses/:id', CustomerController.deleteAddress);
+router.put('/customers/:id/addresses/:id/default', CustomerController.setDefaultAddress);
 
 // ========== 服务请求路由 ==========
 router.get('/service-requests', ServiceRequestController.getServiceRequestList);
@@ -89,6 +105,12 @@ router.post('/transport-queue', TransportQueueController.createQueue);
 router.put('/transport-queue/:id', TransportQueueController.updateQueue);
 router.delete('/transport-queue/:id', TransportQueueController.deleteQueue);
 router.get('/transport-queue/stats', TransportQueueController.getStatistics);
+
+// ========== 仓储管理路由 ==========
+router.get('/warehouse/stock', WarehouseController.getWarehouseData);
+router.post('/warehouse/inout', WarehouseController.submitInOutStock);
+router.post('/warehouse/replenish', WarehouseController.replenishStock);
+router.get('/warehouse/stats', WarehouseController.getWarehouseStats);
 
 // ========== 报表统计路由 ==========
 router.get('/reports/dashboard', ReportController.getDashboardData);

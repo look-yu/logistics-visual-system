@@ -47,9 +47,6 @@
               <div class="header-left">
                 <div class="header-title-group">
                   <span class="title-with-dot">实时运输轨迹监控</span>
-                  <el-tooltip content="点击地图可放大查看" placement="top">
-                    <el-icon class="zoom-tip-icon"><ZoomIn /></el-icon>
-                  </el-tooltip>
                 </div>
                 <el-radio-group v-model="mapType" size="small">
                   <el-radio-button label="all">全部</el-radio-button>
@@ -79,10 +76,11 @@
               </div>
             </div>
           </template>
-          <div class="chart-container map-container" @click="mapDialogVisible = true">
+          <div class="chart-container map-container">
             <AMapView 
               :points="filteredTrackPoints"
               :zoom="5"
+              :highlight-order="searchedOrder"
             />
           </div>
         </el-card>
@@ -104,22 +102,6 @@
         </el-card>
       </el-col>
     </el-row>
-
-    <!-- 地图放大弹窗 -->
-    <el-dialog 
-      v-model="mapDialogVisible" 
-      title="实时运输轨迹全屏监控" 
-      width="90%" 
-      top="5vh"
-      destroy-on-close
-    >
-      <div style="height: 75vh;">
-        <AMapView 
-          :points="filteredTrackPoints"
-          :zoom="6"
-        />
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -132,14 +114,14 @@ import EchartsChart from '../components/EchartsChart.vue'
 import AMapView from '../components/AMapView.vue'
 import { 
   ArrowUp, ArrowDown, Monitor, Refresh, 
-  Van, Timer, Warning, ZoomIn, Search 
+  Van, Timer, Warning, Search 
 } from '@element-plus/icons-vue'
 
 const currentDate = ref(new Date().toLocaleString())
 const loading = ref(false)
 const mapType = ref('all')
-const mapDialogVisible = ref(false)
 const searchOrderNo = ref('')
+const searchedOrder = ref(null)
 
 const router = useRouter()
 
@@ -245,23 +227,33 @@ const fetchOrderTrackData = async () => {
         
         if (order.sender_coord) {
           if (typeof order.sender_coord === 'string') {
-            fromCoord = order.sender_coord.split(',').map(Number)
-          } else if (Array.isArray(order.sender_coord)) {
-            fromCoord = order.sender_coord
+            const coords = order.sender_coord.split(',').map(Number)
+            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]) && coords[0] !== 0 && coords[1] !== 0) {
+              fromCoord = coords
+            }
+          } else if (Array.isArray(order.sender_coord) && order.sender_coord.length === 2) {
+            if (!isNaN(order.sender_coord[0]) && !isNaN(order.sender_coord[1]) && order.sender_coord[0] !== 0 && order.sender_coord[1] !== 0) {
+              fromCoord = order.sender_coord
+            }
           }
         }
         
         if (order.receiver_coord) {
           if (typeof order.receiver_coord === 'string') {
-            toCoord = order.receiver_coord.split(',').map(Number)
-          } else if (Array.isArray(order.receiver_coord)) {
-            toCoord = order.receiver_coord
+            const coords = order.receiver_coord.split(',').map(Number)
+            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]) && coords[0] !== 0 && coords[1] !== 0) {
+              toCoord = coords
+            }
+          } else if (Array.isArray(order.receiver_coord) && order.receiver_coord.length === 2) {
+            if (!isNaN(order.receiver_coord[0]) && !isNaN(order.receiver_coord[1]) && order.receiver_coord[0] !== 0 && order.receiver_coord[1] !== 0) {
+              toCoord = order.receiver_coord
+            }
           }
         }
         
         return {
-          from: order.sender_address.split('市')[0] + '市',
-          to: order.receiver_address.split('市')[0] + '市',
+          from: order.sender_address ? order.sender_address.split('市')[0] + '市' : '未知',
+          to: order.receiver_address ? order.receiver_address.split('市')[0] + '市' : '未知',
           fromCoord: fromCoord,
           toCoord: toCoord,
           pathCoords: [fromCoord, toCoord],
@@ -270,7 +262,7 @@ const fetchOrderTrackData = async () => {
           customerName: order.customer_name,
           goodsType: order.goods_type
         }
-      })
+      }).filter(point => point.fromCoord && point.toCoord)
       
       console.log('DispatcherView: 地图轨迹数据已更新，共', trackPoints.value.length, '条轨迹')
       console.log('DispatcherView: 轨迹数据：', trackPoints.value)
@@ -292,6 +284,7 @@ const searchOrderByNo = () => {
   console.log('当前trackPoints数量：', trackPoints.value.length)
   console.log('当前trackPoints：', trackPoints.value.map(t => ({ orderNo: t.orderNo, hasCoords: !!(t.fromCoord && t.toCoord) })))
   
+  // 支持模糊匹配和精确匹配
   const found = trackPoints.value.find(t => 
     t.orderNo.toLowerCase().includes(searchOrderNo.value.toLowerCase())
   )
@@ -299,16 +292,18 @@ const searchOrderByNo = () => {
   console.log('搜索结果：', found)
   
   if (found) {
-    ElMessage.success(`找到订单：${found.orderNo}`)
+    searchedOrder.value = found
+    ElMessage.success(`找到订单：${found.orderNo} (${found.from} -> ${found.to})`)
     mapType.value = 'all'
-    mapDialogVisible.value = true
   } else {
     ElMessage.warning('未找到该订单，请检查订单号是否正确')
+    searchedOrder.value = null
   }
 }
 
 const clearSearch = () => {
   searchOrderNo.value = ''
+  searchedOrder.value = null
   console.log('已清空搜索')
 }
 
@@ -447,6 +442,10 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
+.map-card {
+  height: 700px;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -485,7 +484,9 @@ onMounted(() => {
 }
 
 .chart-container {
-  height: 350px;
+  height: 100%;
+  width: 100%;
+  position: relative;
 }
 
 .mini-chart {
@@ -493,8 +494,10 @@ onMounted(() => {
 }
 
 .map-container {
-  height: 300px;
+  height: 100%;
+  width: 100%;
   cursor: pointer;
+  position: relative;
 }
 
 .map-container:hover {

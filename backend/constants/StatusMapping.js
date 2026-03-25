@@ -19,7 +19,10 @@ const CAR_STATUS_MAP = {
 const ORDER_STATUS_MAP = {
   'pending': { label: '待分配', type: 'warning' },   // 黄色
   'assigned': { label: '已分配', type: 'primary' },  // 深蓝色
-  'completed': { label: '已完成', type: 'success' }, // 绿色
+  'shipping': { label: '运输中', type: 'info' },    // 蓝色
+  'delivered': { label: '已送达', type: 'success' }, // 绿色
+  'signed': { label: '已签收', type: 'success' },   // 绿色
+  'exception': { label: '异常', type: 'danger' },     // 红色
   'cancelled': { label: '已取消', type: 'danger' }   // 红色
 };
 

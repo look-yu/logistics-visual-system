@@ -15,11 +15,11 @@
                     <el-option label="已分配" value="assigned" />
                     <el-option label="运输中" value="shipping" />
                     <el-option label="已送达" value="delivered" />
+                    <el-option label="已签收" value="signed" />
                   </el-select>
                 </el-form-item>
                 <el-form-item>
                   <el-button type="primary" @click="handleQuery">查询</el-button>
-                  <el-button type="success" @click="openAddDialog">新增订单</el-button>
                 </el-form-item>
               </el-form>
             </div>
@@ -66,10 +66,12 @@
         </el-table-column>
         <el-table-column prop="receiver_address" label="收货地址" show-overflow-tooltip />
         <el-table-column prop="create_time" label="创建时间" width="180" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleDetail(row)">详情</el-button>
-            <el-button link type="warning" @click="handleUpdateStatus(row)">更新状态</el-button>
+            <el-button link type="warning" @click="handleUpdateStatus(row)" v-if="row.status !== 'delivered' && row.status !== 'signed'">更新状态</el-button>
+            <el-button link type="success" @click="handleSignOrder(row)" v-if="row.status === 'delivered'">签收</el-button>
+            <el-tag type="success" size="small" v-if="row.status === 'signed'">已签收</el-tag>
           </template>
         </el-table-column>
       </el-table>
@@ -123,68 +125,6 @@
     </div>
     </el-card>
 
-    <el-dialog v-model="showAddDialog" title="录入新订单" width="600px">
-      <el-form :model="orderForm" label-width="100px" :rules="orderRules" ref="orderFormRef">
-        <el-form-item label="客户名称" prop="customer_name">
-          <el-input v-model="orderForm.customer_name" placeholder="请输入客户名称" />
-        </el-form-item>
-        <el-form-item label="发货地址" prop="sender_address">
-          <el-input v-model="orderForm.sender_address" placeholder="请输入发货地址" />
-        </el-form-item>
-        <el-form-item label="收货地址" prop="receiver_address">
-          <el-input v-model="orderForm.receiver_address" placeholder="请输入收货地址" />
-        </el-form-item>
-        <el-divider content-position="left">货物信息</el-divider>
-        <el-form-item label="货物类型" prop="goods_type">
-          <el-select v-model="orderForm.goods_type" placeholder="请选择货物类型" style="width: 100%" @change="calculatePrice">
-            <el-option label="普通货物" value="普通货物" />
-            <el-option label="生鲜食品" value="生鲜食品" />
-            <el-option label="电子产品" value="电子产品" />
-            <el-option label="危险品" value="危险品" />
-            <el-option label="贵重物品" value="贵重物品" />
-            <el-option label="大件货物" value="大件货物" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="重量" prop="weight">
-          <el-input-number v-model="orderForm.weight" :min="0.1" :max="10000" :precision="2" :step="0.5" style="width: 100%" @change="calculatePrice" />
-          <span style="margin-left: 10px; color: #909399;">公斤</span>
-        </el-form-item>
-        <el-form-item label="体积" prop="volume">
-          <el-input-number v-model="orderForm.volume" :min="0.01" :max="1000" :precision="2" :step="0.1" style="width: 100%" @change="calculatePrice" />
-          <span style="margin-left: 10px; color: #909399;">立方米</span>
-        </el-form-item>
-        <el-divider content-position="left">价格信息</el-divider>
-        <el-form-item label="基础运费" prop="base_price">
-          <el-input-number v-model="orderForm.base_price" :min="0" :precision="2" :step="10" style="width: 100%" @change="calculatePrice" />
-          <span style="margin-left: 10px; color: #909399;">元</span>
-        </el-form-item>
-        <el-form-item label="重量附加费">
-          <el-input v-model="weightFee" disabled style="width: 100%">
-            <template #append>元</template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="体积附加费">
-          <el-input v-model="volumeFee" disabled style="width: 100%">
-            <template #append>元</template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="货物类型附加费">
-          <el-input v-model="goodsTypeFee" disabled style="width: 100%">
-            <template #append>元</template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="总金额">
-          <el-input v-model="totalAmount" disabled style="width: 100%; font-weight: bold; font-size: 16px;">
-            <template #append>元</template>
-          </el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddDialog = false">取消</el-button>
-        <el-button type="primary" @click="submitOrder" :loading="submitLoading">确定</el-button>
-      </template>
-    </el-dialog>
-
     <el-dialog v-model="showDetailDialog" title="订单详情" width="600px">
       <el-descriptions :column="2" border v-if="currentOrder">
         <el-descriptions-item label="订单号">{{ currentOrder.order_no }}</el-descriptions-item>
@@ -213,6 +153,7 @@
             <el-option label="已分配" value="assigned" />
             <el-option label="运输中" value="shipping" />
             <el-option label="已送达" value="delivered" />
+            <el-option label="已签收" value="signed" />
           </el-select>
         </el-form-item>
         <el-form-item label="备注原因">
@@ -222,6 +163,22 @@
       <template #footer>
         <el-button @click="showStatusDialog = false">取消</el-button>
         <el-button type="primary" @click="submitStatusUpdate" :loading="statusLoading">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="showSignDialog" title="订单签收" width="500px">
+      <el-form :model="signForm" label-width="100px">
+        <el-form-item label="订单号">{{ signForm.order_no }}</el-form-item>
+        <el-form-item label="签收人" required>
+          <el-input v-model="signForm.signer" placeholder="请输入签收人姓名" />
+        </el-form-item>
+        <el-form-item label="签收备注">
+          <el-input v-model="signForm.remark" type="textarea" :rows="3" placeholder="请输入签收备注（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showSignDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitSignOrder" :loading="statusLoading">确定</el-button>
       </template>
     </el-dialog>
 
@@ -323,69 +280,21 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const API_BASE = 'http://localhost:5001/api'
 const loading = ref(false)
-const submitLoading = ref(false)
 const statusLoading = ref(false)
-const showAddDialog = ref(false)
 const showDetailDialog = ref(false)
 const showStatusDialog = ref(false)
+const showSignDialog = ref(false)
 const orderList = ref([])
 const total = ref(0)
 const currentOrder = ref(null)
-const orderFormRef = ref(null)
 const activeTab = ref('orders')
 
-const queryParams = reactive({ page: 1, size: 10, order_no: '', status: '' })
-const orderForm = reactive({ 
-  customer_name: '', 
-  sender_address: '', 
-  receiver_address: '',
-  goods_type: '普通货物',
-  weight: 1.0,
-  volume: 0.1,
-  base_price: 100.0
-})
+const queryParams = reactive({ page:1, size: 10, order_no: '', status: '' })
 const statusForm = reactive({ id: '', order_no: '', status: '', reason: '' })
+const signForm = reactive({ id: '', order_no: '', signer: '', remark: '' })
 
-const weightFee = ref(0)
-const volumeFee = ref(0)
-const goodsTypeFee = ref(0)
-const totalAmount = ref(0)
-
-const statusNameMap = { pending: '待处理', assigned: '已分配', shipping: '运输中', delivered: '已送达' }
-const statusTypeMap = { pending: 'info', assigned: 'primary', shipping: 'warning', delivered: 'success' }
-
-const orderRules = {
-  customer_name: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
-  sender_address: [{ required: true, message: '请输入发货地址', trigger: 'blur' }],
-  receiver_address: [{ required: true, message: '请输入收货地址', trigger: 'blur' }],
-  goods_type: [{ required: true, message: '请选择货物类型', trigger: 'change' }],
-  weight: [{ required: true, message: '请输入重量', trigger: 'blur' }],
-  volume: [{ required: true, message: '请输入体积', trigger: 'blur' }],
-  base_price: [{ required: true, message: '请输入基础运费', trigger: 'blur' }]
-}
-
-const goodsTypePriceMap = {
-  '普通货物': 1.0,
-  '生鲜食品': 1.5,
-  '电子产品': 1.3,
-  '危险品': 2.0,
-  '贵重物品': 2.5,
-  '大件货物': 1.8
-}
-
-const calculatePrice = () => {
-  const weightPrice = orderForm.weight * 2
-  const volumePrice = orderForm.volume * 50
-  const goodsTypeMultiplier = goodsTypePriceMap[orderForm.goods_type] || 1.0
-  const goodsTypePrice = orderForm.base_price * (goodsTypeMultiplier - 1)
-  
-  weightFee.value = weightPrice.toFixed(2)
-  volumeFee.value = volumePrice.toFixed(2)
-  goodsTypeFee.value = goodsTypePrice.toFixed(2)
-  
-  const total = parseFloat(orderForm.base_price) + weightPrice + volumePrice + goodsTypePrice
-  totalAmount.value = total.toFixed(2)
-}
+const statusNameMap = { pending: '待处理', assigned: '已分配', shipping: '运输中', delivered: '已送达', signed: '已签收' }
+const statusTypeMap = { pending: 'info', assigned: 'primary', shipping: 'warning', delivered: 'success', signed: 'success' }
 
 const handleTabChange = (tab) => {
   if (tab === 'orders') {
@@ -403,54 +312,6 @@ const handleQuery = async () => {
     total.value = res.data.data.total
   } catch (err) { ElMessage.error('获取订单列表失败') }
   loading.value = false
-}
-
-const submitOrder = async () => {
-  if (!orderFormRef.value) return
-  
-  await orderFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    
-    submitLoading.value = true
-    try {
-      const orderData = {
-        ...orderForm,
-        amount: parseFloat(totalAmount.value)
-      }
-      await axios.post(`${API_BASE}/orders`, orderData)
-      ElMessage.success('录入成功')
-      showAddDialog.value = false
-      resetOrderForm()
-      handleQuery()
-    } catch (err) { 
-      console.error('录入失败：', err)
-      ElMessage.error('录入失败：' + (err.response?.data?.msg || err.message)) 
-    }
-    submitLoading.value = false
-  })
-}
-
-const resetOrderForm = () => {
-  orderForm.customer_name = ''
-  orderForm.sender_address = ''
-  orderForm.receiver_address = ''
-  orderForm.goods_type = '普通货物'
-  orderForm.weight = 1.0
-  orderForm.volume = 0.1
-  orderForm.base_price = 100.0
-  weightFee.value = 0
-  volumeFee.value = 0
-  goodsTypeFee.value = 0
-  totalAmount.value = 0
-  if (orderFormRef.value) {
-    orderFormRef.value.clearValidate()
-  }
-}
-
-const openAddDialog = () => {
-  resetOrderForm()
-  calculatePrice()
-  showAddDialog.value = true
 }
 
 const handleDetail = async (row) => {
@@ -503,6 +364,43 @@ const submitStatusUpdate = async () => {
     console.error('更新状态错误：', err)
     if (err.response) {
       ElMessage.error(err.response.data.msg || '状态更新失败')
+    } else if (err.request) {
+      ElMessage.error('网络错误，请检查后端服务')
+    } else {
+      ElMessage.error('请求失败：' + err.message)
+    }
+  }
+  statusLoading.value = false
+}
+
+const handleSignOrder = (row) => {
+  console.log('当前订单信息：', row)
+  signForm.id = row.id
+  signForm.order_no = row.order_no
+  signForm.signer = ''
+  signForm.remark = ''
+  showSignDialog.value = true
+}
+
+const submitSignOrder = async () => {
+  if (!signForm.signer) return ElMessage.warning('请输入签收人')
+  statusLoading.value = true
+  try {
+    const response = await axios.put(`${API_BASE}/orders/${signForm.id}/sign`, {
+      signer: signForm.signer,
+      remark: signForm.remark
+    })
+    if (response.data.code === 200) {
+      ElMessage.success('签收成功')
+      showSignDialog.value = false
+      handleQuery()
+    } else {
+      ElMessage.error(response.data.msg || '签收失败')
+    }
+  } catch (err) {
+    console.error('签收错误：', err)
+    if (err.response) {
+      ElMessage.error(err.response.data.msg || '签收失败')
     } else if (err.request) {
       ElMessage.error('网络错误，请检查后端服务')
     } else {

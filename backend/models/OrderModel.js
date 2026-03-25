@@ -84,7 +84,7 @@ const mockOrders = [
 class OrderModel {
   // 获取订单列表 (支持分页、状态筛选、关键字搜索)
   static async findAll(params = {}) {
-    const { page = 1, size = 10, order_no, status, customer_name } = params;
+    const { page = 1, size = 10, order_no, status, customer_name, customer_id } = params;
     try {
       let sql = 'SELECT * FROM orders WHERE 1=1';
       const queryParams = [];
@@ -100,6 +100,10 @@ class OrderModel {
       if (customer_name) {
         sql += ' AND customer_name LIKE ?';
         queryParams.push(`%${customer_name}%`);
+      }
+      if (customer_id) {
+        sql += ' AND customer_id = ?';
+        queryParams.push(customer_id);
       }
 
       const offset = (page - 1) * parseInt(size);
@@ -135,7 +139,7 @@ class OrderModel {
 
   // 统计订单数量
   static async count(params = {}) {
-    const { order_no, status, customer_name } = params;
+    const { order_no, status, customer_name, customer_id } = params;
     try {
       let sql = 'SELECT COUNT(*) as total FROM orders WHERE 1=1';
       const queryParams = [];
@@ -151,6 +155,10 @@ class OrderModel {
       if (customer_name) {
         sql += ' AND customer_name LIKE ?';
         queryParams.push(`%${customer_name}%`);
+      }
+      if (customer_id) {
+        sql += ' AND customer_id = ?';
+        queryParams.push(customer_id);
       }
 
       const [rows] = await db.query(sql, queryParams);
@@ -172,6 +180,7 @@ class OrderModel {
   static async create(orderData) {
     const { 
       order_no, 
+      customer_id,
       customer_name, 
       sender_address, 
       receiver_address, 
@@ -185,11 +194,12 @@ class OrderModel {
     
     const sql = `
       INSERT INTO orders 
-      (order_no, customer_name, sender_address, receiver_address, goods_type, weight, volume, amount, status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (order_no, customer_id, customer_name, sender_address, receiver_address, goods_type, weight, volume, amount, status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [result] = await db.query(sql, [
       order_no, 
+      customer_id,
       customer_name, 
       sender_address, 
       receiver_address, 
@@ -214,6 +224,47 @@ class OrderModel {
     const sql = 'SELECT * FROM orders WHERE id = ?';
     const [rows] = await db.query(sql, [id]);
     return rows[0];
+  }
+
+  // 签收订单
+  static async signOrder(id, signer, remark) {
+    const sql = `
+      UPDATE orders 
+      SET status = 'signed', signed_time = NOW(), signer = ?, sign_remark = ? 
+      WHERE id = ?
+    `;
+    const [result] = await db.query(sql, [signer, remark, id]);
+    return result.affectedRows;
+  }
+
+  // 取消订单
+  static async cancelOrder(id, reason, penalty) {
+    const sql = `
+      UPDATE orders 
+      SET status = 'cancelled', cancel_reason = ?, cancel_time = NOW(), penalty_amount = ? 
+      WHERE id = ?
+    `;
+    const [result] = await db.query(sql, [reason, penalty, id]);
+    return result.affectedRows;
+  }
+
+  // 获取订单司机信息
+  static async getOrderDriver(id) {
+    const sql = `
+      SELECT 
+        v.id,
+        v.car_no,
+        v.driver_name,
+        v.driver_phone,
+        v.status as vehicle_status,
+        t.status as task_status
+      FROM orders o
+      LEFT JOIN transport_tasks t ON o.id = t.order_id
+      LEFT JOIN vehicles v ON t.vehicle_id = v.id
+      WHERE o.id = ?
+    `;
+    const [rows] = await db.query(sql, [id]);
+    return rows[0] || null;
   }
 }
 
