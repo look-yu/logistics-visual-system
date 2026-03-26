@@ -4,7 +4,6 @@ import ManagerView from '../views/ManagerView.vue'
 import DispatcherView from '../views/DispatcherView.vue'
 import OrderManage from '../views/OrderManage.vue'
 import ReportDashboard from '../views/ReportDashboard.vue'
-import DriverManage from '../views/DriverManage.vue'
 import CustomerManage from '../views/CustomerManage.vue'
 import ServiceRequestManage from '../views/ServiceRequestManage.vue'
 import ShipmentPlanManage from '../views/ShipmentPlanManage.vue'
@@ -18,6 +17,7 @@ import CustomerHome from '../views/CustomerHome.vue'
 import MyOrders from '../views/MyOrders.vue'
 import Profile from '../views/Profile.vue'
 import OrderDetail from '../views/OrderDetail.vue'
+import RouteQuery from '../views/RouteQuery.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { title: '用户登录', hideMenu: true } },
@@ -34,8 +34,8 @@ const routes = [
       { path: 'manager', name: 'Manager', component: ManagerView, meta: { title: '管理决策中心' } },
       { path: 'dispatcher', name: 'Dispatcher', component: DispatcherView, meta: { title: '运输调度监控' } },
       { path: 'orders', name: 'Orders', component: OrderManage, meta: { title: '订单全流程管理' } },
+      { path: 'route-query', name: 'RouteQuery', component: RouteQuery, meta: { title: '运输路线查询' } },
       { path: 'customers', name: 'Customers', component: CustomerManage, meta: { title: '客户管理' } },
-      { path: 'drivers', name: 'Drivers', component: DriverManage, meta: { title: '司机管理' } },
       { path: 'service-requests', name: 'ServiceRequests', component: ServiceRequestManage, meta: { title: '服务请求管理' } },
       { path: 'shipment-plans', name: 'ShipmentPlans', component: ShipmentPlanManage, meta: { title: '装运计划管理' } },
       { path: 'reports', name: 'Reports', component: ReportDashboard, meta: { title: '分析看板' } },

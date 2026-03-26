@@ -38,24 +38,9 @@
       </el-col>
     </el-row>
 
-    <!-- 车辆状态和任务进度 -->
+    <!-- 今日任务进度 -->
     <el-row :gutter="20" class="main-row">
-      <el-col :span="12">
-        <el-card class="status-card" shadow="hover">
-          <template #header>
-            <span class="title-with-dot">车辆运力分布</span>
-          </template>
-          <div class="chart-container mini-chart">
-            <EchartsChart 
-              role="warehouse" 
-              title="" 
-              :xAxisData="vehicleStatusLabels"
-              :seriesData="vehicleStatusValues"
-            />
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
+      <el-col :span="24">
         <el-card class="progress-card" shadow="hover">
           <template #header>
             <span class="title-with-dot">今日任务进度</span>
@@ -148,10 +133,6 @@ const kpiCards = computed(() => [
 // 图表数据
 const timeSlotXData = ref(['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'])
 const timeSlotYData = ref([45, 32, 120, 185, 156, 98])
-
-// 车辆状态数据
-const vehicleStatusLabels = ref(['空闲', '在途', '维修', '已分配'])
-const vehicleStatusValues = ref([85, 42, 8, 15])
 
 // 任务进度
 const taskProgress = ref([

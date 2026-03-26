@@ -6,7 +6,6 @@ const OrderController = require('../controllers/OrderController');
 const VehicleController = require('../controllers/VehicleController');
 const ReportController = require('../controllers/ReportController');
 const PriceController = require('../controllers/PriceController');
-const DriverController = require('../controllers/DriverController');
 const CustomerController = require('../controllers/CustomerController');
 const ServiceRequestController = require('../controllers/ServiceRequestController');
 const ShipmentPlanController = require('../controllers/ShipmentPlanController');
@@ -48,15 +47,6 @@ router.post('/transport/schedule', VehicleController.scheduleVehicle);
 router.get('/transport/tasks', VehicleController.getTaskList);
 router.put('/transport/tasks/:id/status', VehicleController.updateTaskStatus);
 
-// ========== 司机管理路由 ==========
-router.get('/drivers', DriverController.getDriverList);
-router.get('/drivers/:id', DriverController.getDriverDetail);
-router.post('/drivers', DriverController.createDriver);
-router.put('/drivers/:id', DriverController.updateDriver);
-router.delete('/drivers/:id', DriverController.deleteDriver);
-router.get('/drivers/:id/vehicles', DriverController.getDriverVehicles);
-router.get('/drivers/:id/tasks', DriverController.getDriverTasks);
-
 // ========== 客户管理路由 ==========
 router.get('/customers', CustomerController.getCustomerList);
 router.get('/customers/:id', CustomerController.getCustomerDetail);
@@ -64,11 +54,6 @@ router.post('/customers', CustomerController.createCustomer);
 router.put('/customers/:id', CustomerController.updateCustomer);
 router.delete('/customers/:id', CustomerController.deleteCustomer);
 router.get('/customers/stats', CustomerController.getCustomerStats);
-router.get('/customers/:id/addresses', CustomerController.getAddressList);
-router.post('/customers/:id/addresses', CustomerController.addAddress);
-router.put('/customers/:id/addresses/:id', CustomerController.updateAddress);
-router.delete('/customers/:id/addresses/:id', CustomerController.deleteAddress);
-router.put('/customers/:id/addresses/:id/default', CustomerController.setDefaultAddress);
 
 // ========== 服务请求路由 ==========
 router.get('/service-requests', ServiceRequestController.getServiceRequestList);

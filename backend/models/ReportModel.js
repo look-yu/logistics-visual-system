@@ -578,8 +578,8 @@ class ReportModel {
     try {
       const sql = `
         SELECT COUNT(*) as active_count
-        FROM drivers
-        WHERE status = 1 AND vehicle_no IS NOT NULL AND vehicle_no != ''
+        FROM vehicles
+        WHERE status = 'busy'
       `;
       const [rows] = await db.query(sql);
       

@@ -30,16 +30,13 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
-// 引入中国地图JSON（路径匹配项目public/map/china.json）
-import chinaJson from '@/map/china.json';  // @ = src 根目录
-echarts.registerMap('china', chinaJson);
 
 // 修复2：完善props类型校验，增加容错默认值
 const props = defineProps({
   role: { 
     type: String, 
     default: 'manager',
-    validator: (val) => ['manager', 'dispatcher', 'warehouse', 'track'].includes(val)
+    validator: (val) => ['manager', 'dispatcher', 'warehouse'].includes(val)
   },
   chartType: {
     type: String,
@@ -49,16 +46,7 @@ const props = defineProps({
   title: { type: String, default: '物流数据可视化' },
   xAxisData: { type: Array, default: () => [] },
   seriesData: { type: [Array, Object], default: () => [] },
-  seriesName: { type: String, default: '订单量' },
-  trackPoints: { 
-    type: Array, 
-    default: () => [],
-    validator: (val) => {
-      return val.every(item => {
-        return item && (item.fromCoord || item.toCoord)
-      })
-    }
-  }
+  seriesName: { type: String, default: '订单量' }
 })
 
 // 定义错误事件，适配父组件错误捕获
@@ -70,15 +58,6 @@ const myChart = ref(null)
 const fullscreenVisible = ref(false)
 const fullscreenChartRef = ref(null)
 const fullscreenChart = ref(null)
-
-// 修复4：地图只注册一次，避免重复警告
-let mapRegistered = false
-const registerMapIfNeeded = () => {
-  if (props.role === 'track' && !mapRegistered) {
-    echarts.registerMap('china', chinaJson)
-    mapRegistered = true
-  }
-}
 
 // 修复5：封装resize处理函数，方便移除监听
 const handleResize = () => {
@@ -97,7 +76,6 @@ const initChart = () => {
   
   try {
     myChart.value = echarts.init(chartRef.value)
-    registerMapIfNeeded() // 按需注册地图
     updateChart(myChart.value)
   } catch (err) {
     emit('chart-error', err)
@@ -115,7 +93,6 @@ const initFullscreenChart = () => {
   
   try {
     fullscreenChart.value = echarts.init(fullscreenChartRef.value)
-    registerMapIfNeeded()
     updateChart(fullscreenChart.value)
   } catch (err) {
     console.error('全屏图表初始化失败：', err)
@@ -325,126 +302,6 @@ const updateChart = (chartInstance) => {
     }
   }
 
-  // 轨迹地图：增加数据容错，过滤无效坐标
-  if (props.role === 'track') {
-    // 过滤有效轨迹点（排除coords为[0,0]的情况）
-    const validTrackPoints = props.trackPoints.filter(point => {
-      const validFrom = point.fromCoord && point.fromCoord.every(num => num !== 0)
-      const validTo = point.toCoord && point.toCoord.every(num => num !== 0)
-      return validFrom || validTo
-    })
-
-    if (validTrackPoints.length === 0) {
-      option = noDataOption
-    } else {
-      option = {
-        backgroundColor: '#fff',
-        title: { 
-          text: props.title, 
-          left: 'center', 
-          textStyle: { color: '#333', fontSize: 16 } 
-        },
-        tooltip: { 
-          trigger: 'item',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          borderColor: '#409EFF',
-          textStyle: { color: '#fff' },
-          formatter: (params) => {
-            if (params.seriesType === 'lines') {
-              return `<b>${params.name}</b><br/>状态：运输中<br/>预计到达：2小时后`
-            }
-            return `节点：${params.name}<br/>坐标：${params.value.join(',')}`
-          }
-        },
-        geo: {
-          map: 'china',
-          roam: true,
-          label: { 
-            show: false, 
-            fontSize: 10,
-            color: '#999' 
-          },
-          itemStyle: {
-            areaColor: '#f5f7fa',
-            borderColor: '#dcdfe6',
-            borderWidth: 1
-          },
-          emphasis: { 
-            itemStyle: { areaColor: '#ecf5ff' },
-            label: { show: true, color: '#409EFF' }
-          },
-          center: [105.07, 36.03],
-          zoom: 1.2
-        },
-        series: [
-          // 1. 静态轨迹线
-          {
-            name: '轨迹线',
-            type: 'lines',
-            coordinateSystem: 'geo',
-            polyline: true, // 支持多点路径
-            zlevel: 1,
-            data: validTrackPoints.map(point => ({
-              name: `${point.from} -> ${point.to}`,
-              coords: point.pathCoords || [point.fromCoord, point.toCoord],
-              lineStyle: { color: point.urgent ? '#F56C6C' : '#409EFF', width: 2, opacity: 0.4, curveness: point.pathCoords ? 0 : 0.2 }
-            }))
-          },
-          // 2. 动态流向效果 (飞线)
-          {
-            name: '动态流向',
-            type: 'lines',
-            coordinateSystem: 'geo',
-            polyline: true, // 支持多点路径
-            zlevel: 2,
-            effect: {
-              show: true,
-              period: 4, // 动画时间
-              trailLength: 0.4, // 拖尾长度
-              symbol: 'arrow', // 符号类型
-              symbolSize: 6,
-              color: '#fff'
-            },
-            data: validTrackPoints.map(point => ({
-              coords: point.pathCoords || [point.fromCoord, point.toCoord],
-              lineStyle: {
-                color: point.urgent ? '#F56C6C' : '#409EFF',
-                width: 0,
-                curveness: point.pathCoords ? 0 : 0.2
-              }
-            }))
-          },
-          // 3. 散点标记 (起点和终点)
-          {
-            name: '物流节点',
-            type: 'effectScatter',
-            coordinateSystem: 'geo',
-            zlevel: 3,
-            rippleEffect: { brushType: 'stroke', scale: 3 },
-            label: {
-              show: true,
-              position: 'right',
-              formatter: '{b}',
-              fontSize: 10,
-              color: '#333'
-            },
-            symbolSize: (val) => 8,
-            itemStyle: {
-              color: (params) => {
-                // 起点蓝色，终点红色
-                return params.dataIndex % 2 === 0 ? '#409EFF' : '#67C23A';
-              }
-            },
-            data: validTrackPoints.flatMap(point => [
-              { name: point.from, value: [...point.fromCoord, 100] },
-              { name: point.to, value: [...point.toCoord, 100] }
-            ])
-          }
-        ]
-      }
-    }
-  }
-
   chartInstance.setOption(option)
 }
 
@@ -466,7 +323,7 @@ const handleDialogClosed = () => {
 
 // 修复8：修改watch为deep: true，监听数组深层变化
 watch(
-  [() => props.role, () => props.xAxisData, () => props.seriesData, () => props.trackPoints], 
+  [() => props.role, () => props.xAxisData, () => props.seriesData], 
   () => {
     if (myChart.value) updateChart(myChart.value)
     if (fullscreenChart.value) updateChart(fullscreenChart.value)

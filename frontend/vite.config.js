@@ -13,7 +13,14 @@ export default defineConfig({
   server: {
     port: 5173, // 固定端口，避免冲突
     open: true, // 启动后自动打开浏览器
-    cors: true // 允许跨域
+    cors: true, // 允许跨域
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   // 适配 Node.js 18 的构建配置
   build: {

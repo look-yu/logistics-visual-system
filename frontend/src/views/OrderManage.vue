@@ -117,7 +117,7 @@
 
     <div class="pagination-container" v-if="activeTab === 'requests'">
       <el-pagination
-        v-model:current-page="requestQueryParams.page"
+        v-model="requestQueryParams.page"
         :total="requestTotal"
         layout="total, prev, pager, next"
         @current-change="handleRequestQuery"

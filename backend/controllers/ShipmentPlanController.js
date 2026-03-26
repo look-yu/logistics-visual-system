@@ -17,7 +17,7 @@ class ShipmentPlanController {
         FROM shipment_plans sp
         LEFT JOIN customers c ON sp.customer_id = c.id
         LEFT JOIN drivers d ON sp.driver_id = d.id
-        LEFT JOIN vehicles v ON d.id = v.driver_id AND v.status = 'busy'
+        LEFT JOIN vehicles v ON d.driver_name = v.driver_name
         WHERE 1=1
       `;
       const params = [];
@@ -80,7 +80,7 @@ class ShipmentPlanController {
         FROM shipment_plans sp
         LEFT JOIN customers c ON sp.customer_id = c.id
         LEFT JOIN drivers d ON sp.driver_id = d.id
-        LEFT JOIN vehicles v ON d.id = v.driver_id AND v.status = 'busy'
+        LEFT JOIN vehicles v ON d.driver_name = v.driver_name
         WHERE sp.id = ?
       `, [id]);
       

@@ -26,13 +26,13 @@
               <el-icon><Document /></el-icon>
               <span>订单管理</span>
             </el-menu-item>
+            <el-menu-item index="/route-query">
+              <el-icon><Location /></el-icon>
+              <span>路线查询</span>
+            </el-menu-item>
             <el-menu-item index="/customers">
               <el-icon><User /></el-icon>
               <span>客户管理</span>
-            </el-menu-item>
-            <el-menu-item index="/drivers">
-              <el-icon><Van /></el-icon>
-              <span>司机管理</span>
             </el-menu-item>
             <el-menu-item index="/warehouse">
               <el-icon><Box /></el-icon>
