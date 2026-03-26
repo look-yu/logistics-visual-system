@@ -63,8 +63,9 @@ import { request } from '../api/index'
 const loading = ref(false)
 const selectedOrder = ref(null)
 const routeInfo = ref(null)
-const map = ref(null)
-const driving = ref(null)
+
+let map = null
+let driving = null
 
 const queryParams = ref({
   order_no: ''
@@ -77,84 +78,129 @@ const handleQueryRouteByOrderNo = async () => {
   }
 
   loading.value = true
+  
   try {
-    console.log('开始查询订单，订单号:', queryParams.value.order_no)
-    const response = await request.get('/orders', { 
-      params: { 
-        order_no: queryParams.value.order_no,
-        page: 1,
-        size: 1
+    console.log('========== 开始查询路线 ==========')
+    
+    // 步骤1: 查询订单
+    console.log('步骤1: 查询订单...')
+    let order = null
+    try {
+      const response = await request.get('/orders', { 
+        params: { 
+          order_no: queryParams.value.order_no, 
+          page: 1, 
+          size: 1 
+        } 
+      })
+      
+      console.log('订单查询结果:', response) 
+      
+      // 安全判断 
+      if (!response || !response.list || response.list.length === 0) { 
+        window.ElMessage.error('订单不存在') 
+        return 
+      } 
+      
+      order = response.list[0]
+      console.log('订单信息:', order)
+      
+      if (order.status !== 'assigned' && order.status !== 'shipping') {
+        window.ElMessage.warning('只能查询待运输和运输中的订单')
+        return
       }
-    })
-    
-    console.log('订单查询结果:', response)
-    
-    if (!response.list || response.list.length === 0) {
-      window.ElMessage.error('订单不存在')
-      return
-    }
-    
-    const order = response.list[0]
-    console.log('订单信息:', order)
-    
-    if (order.status !== 'assigned' && order.status !== 'shipping') {
-      window.ElMessage.warning('只能查询待运输和运输中的订单')
-      return
-    }
-    
-    selectedOrder.value = order
-    
-    if (!order.sender_address || !order.receiver_address) {
-      window.ElMessage.warning('订单地址信息不完整')
-      return
-    }
-
-    console.log('开始地址解析...')
-    const origin = await geocodeAddress(order.sender_address)
-    const destination = await geocodeAddress(order.receiver_address)
-
-    console.log('地址解析结果:', { origin, destination })
-
-    if (!origin || !destination) {
-      window.ElMessage.error('地址解析失败，请检查地址格式')
-      return
-    }
-
-    console.log('开始查询驾车路线...')
-    const routeData = await amapApi.getDrivingRoute(
-      { lng: origin.lng, lat: origin.lat },
-      { lng: destination.lng, lat: destination.lat }
-    )
-
-    console.log('路线查询结果:', routeData)
-
-    if (routeData.status === '1' && routeData.route) {
-      displayRoute(routeData.route, origin, destination)
-      routeInfo.value = {
-        distance: routeData.route.paths[0].distance,
-        duration: routeData.route.paths[0].duration,
-        origin: order.sender_address,
-        destination: order.receiver_address
+      
+      selectedOrder.value = order
+      
+      if (!order.sender_address || !order.receiver_address) {
+        window.ElMessage.warning('订单地址信息不完整')
+        return
       }
-      window.ElMessage.success('路线查询成功')
-    } else {
-      console.error('路线查询失败，返回数据:', routeData)
-      window.ElMessage.error('路线查询失败')
+    } catch (error) {
+      console.error('订单查询失败:', error)
+      window.ElMessage.error('订单查询失败，请稍后重试')
+      return
+    }
+    
+    // 步骤2: 地址解析（核心修复区）
+    console.log('步骤2: 地址解析...')
+    let origin = null
+    let destination = null
+    
+    try {
+      // 解析发货地址
+      if (order.sender_address) {
+        const originResult = await geocodeAddress(order.sender_address)
+        console.log('发货地址解析结果：', originResult)
+        
+        // 修复：安全判断，不读取 undefined 的属性
+        if (!originResult) {
+          console.error('发货地址解析失败')
+          window.ElMessage.error('发货地址解析失败，请检查地址格式')
+          return
+        }
+        origin = originResult
+      }
+      
+      // 解析收货地址
+      if (order.receiver_address) {
+        const destResult = await geocodeAddress(order.receiver_address)
+        console.log('收货地址解析结果：', destResult)
+        
+        if (!destResult) {
+          console.error('收货地址解析失败')
+          window.ElMessage.error('收货地址解析失败，请检查地址格式')
+          return
+        }
+        destination = destResult
+      }
+      
+      console.log('地址解析结果:', { origin, destination })
+      
+      if (!origin || !destination) {
+        console.error('地址解析不完整')
+        window.ElMessage.error('地址解析失败，请检查地址格式')
+        return
+      }
+    } catch (error) {
+      // 修复：安全访问 error 属性，防止 undefined 报错
+      console.error('地址解析过程失败:', error)
+      window.ElMessage.error('地址解析失败，请稍后重试')
+      return
+    }
+    
+    // 步骤3: 路线查询
+    console.log('步骤3: 查询驾车路线...')
+    try {
+      const routeData = await amapApi.getDrivingRoute(
+        { lng: origin.lng, lat: origin.lat },
+        { lng: destination.lng, lat: destination.lat }
+      )
+
+      console.log('路线查询结果:', routeData)
+
+      if (routeData && routeData.status === '1' && routeData.route && routeData.route.paths && routeData.route.paths.length > 0) {
+        displayRoute(routeData.route, origin, destination)
+        routeInfo.value = {
+          distance: routeData.route.paths[0].distance,
+          duration: routeData.route.paths[0].duration,
+          origin: order.sender_address,
+          destination: order.receiver_address
+        }
+        window.ElMessage.success('路线查询成功')
+        console.log('========== 路线查询成功 ==========')
+      } else {
+        console.error('路线查询失败，返回数据:', routeData)
+        window.ElMessage.error('路线查询失败，请稍后重试')
+      }
+    } catch (error) {
+      console.error('路线查询过程失败:', error)
+      window.ElMessage.error('查询失败: 网络或地图服务异常')
     }
   } catch (error) {
-    console.error('路线查询失败:', error)
-    console.error('错误详情:', error?.message, error?.code)
-    
-    if (error?.response) {
-      console.error('响应错误:', error.response.status, error.response.data)
-      window.ElMessage.error(`服务器错误: ${error.response.status}`)
-    } else if (error?.request) {
-      console.error('请求错误，无响应')
-      window.ElMessage.error('服务器无响应，请检查后端服务')
-    } else {
-      console.error('其他错误:', error?.message)
-      window.ElMessage.error(`查询失败: ${error?.message || '未知错误'}`)
-    }
+    // 最终层安全捕获
+    console.error('查询流程异常:', error)
+    window.ElMessage.error('查询过程发生异常，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -178,39 +224,58 @@ const geocodeAddress = async (address) => {
 }
 
 const displayRoute = (route, origin, destination) => {
-  if (!map.value) {
-    initMap()
-  }
-
-  if (driving.value) {
-    driving.value.clear()
-  }
-
-  driving.value = new AMap.Driving({
-    map: map.value,
-    hideMarkers: false,
-    showTraffic: false
-  })
-
-  const startLngLat = new AMap.LngLat(origin.lng, origin.lat)
-  const endLngLat = new AMap.LngLat(destination.lng, destination.lat)
-
-  driving.value.search(startLngLat, endLngLat, (status, result) => {
-    if (status === 'complete') {
-      console.log('路线规划成功:', result)
+  try {
+    console.log('开始显示路线...')
+    
+    if (!map) {
+      console.log('地图未初始化，开始初始化...')
+      initMap()
+      
+      if (!map) {
+        console.error('地图初始化失败')
+        window.ElMessage.error('地图初始化失败')
+        return
+      }
     }
-  })
+
+    if (driving) {
+      driving.clear()
+    }
+
+    driving = new AMap.Driving({
+      map: map,
+      hideMarkers: false,
+      showTraffic: false
+    })
+
+    const startLngLat = new AMap.LngLat(origin.lng, origin.lat)
+    const endLngLat = new AMap.LngLat(destination.lng, destination.lat)
+
+    driving.search(startLngLat, endLngLat, (status, result) => {
+      if (status === 'complete') {
+        console.log('路线规划成功:', result)
+      } else {
+        console.error('路线规划失败:', status, result)
+        window.ElMessage.error('路线规划失败')
+      }
+    })
+  } catch (error) {
+    console.error('显示路线失败:', error)
+    console.error('错误详情:', error?.message, error?.stack)
+    window.ElMessage.error('显示路线失败，请稍后重试')
+  }
 }
 
 const initMap = () => {
   try {
+    console.log('开始初始化地图...')
+    
     if (!window.AMap) {
       console.error('高德地图API未加载')
-      return
+      throw new Error('高德地图API未加载')
     }
     
-    console.log('开始初始化地图...')
-    map.value = new AMap.Map('amap-container', {
+    map = new AMap.Map('amap-container', {
       zoom: 11,
       center: [116.397428, 39.90923],
       viewMode: '2D'
@@ -220,14 +285,22 @@ const initMap = () => {
 
     AMap.plugin(['AMap.Driving'], () => {
       console.log('驾车路线插件加载完成')
-      driving.value = new AMap.Driving({
-        map: map.value,
-        hideMarkers: false,
-        showTraffic: false
-      })
+      try {
+        driving = new AMap.Driving({
+          map: map,
+          hideMarkers: false,
+          showTraffic: false
+        })
+        console.log('驾车路线实例创建成功')
+      } catch (error) {
+        console.error('创建驾车路线实例失败:', error)
+      }
     })
   } catch (error) {
     console.error('地图初始化失败:', error)
+    console.error('错误详情:', error?.message, error?.stack)
+    map = null
+    driving = null
   }
 }
 
@@ -251,6 +324,11 @@ const formatDuration = (seconds) => {
 onMounted(() => {
   console.log('组件挂载，开始加载高德地图API')
   
+  // 配置安全密钥
+  window._AMapSecurityConfig = {
+    securityJsCode: '4253fb92cc5225316c5311c3749a3e79'
+  }
+  
   // 检查是否已经加载过地图API
   if (window.AMap) {
     console.log('高德地图API已加载，直接初始化')
@@ -260,7 +338,7 @@ onMounted(() => {
   
   // 加载高德地图API
   const script = document.createElement('script')
-  script.src = 'https://webapi.amap.com/maps?v=2.0&key=a6551652c0cbafd673698c551d15bb52'
+  script.src = 'https://webapi.amap.com/maps?v=2.0&key=c11762d4a330d10164fd5d41959eb779&plugin=AMap.Driving'
   script.onerror = () => {
     console.error('高德地图API加载失败')
   }
@@ -275,13 +353,13 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (map.value) {
-    map.value.destroy()
-    map.value = null
+  if (map) {
+    map.destroy()
+    map = null
   }
-  if (driving.value) {
-    driving.value.clear()
-    driving.value = null
+  if (driving) {
+    driving.clear()
+    driving = null
   }
 })
 </script>
@@ -317,7 +395,8 @@ onUnmounted(() => {
   border: 1px solid #e6e6e6;
   border-radius: 4px;
   overflow: hidden;
-  min-height: 500px;
+  min-height: 600px;
+  height: 600px;
 }
 
 .map-header {
@@ -331,7 +410,9 @@ onUnmounted(() => {
 
 .amap {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
+  width: 100%;
+  height: 100%;
 }
 
 .route-info {

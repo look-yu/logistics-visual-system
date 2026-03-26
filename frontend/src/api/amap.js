@@ -1,7 +1,6 @@
 import axios from 'axios'
 
-const AMAP_KEY = 'a6551652c0cbafd673698c551d15bb52'
-const AMAP_SECRET = '1eb337536e5623c73354862b716c8923'
+const AMAP_KEY = 'd3381d894100dec0fe1e97eaf1689fff'
 
 const amapRequest = axios.create({
   baseURL: 'https://restapi.amap.com',
