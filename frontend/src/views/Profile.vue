@@ -332,7 +332,18 @@ const addressRules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
   ],
   region: [
-    { required: true, message: '请选择所在地区', trigger: 'change' }
+    { 
+      required: true, 
+      message: '请选择所在地区', 
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (!value || value.length !== 3) {
+          callback(new Error('请选择完整的省/市/区'))
+        } else {
+          callback()
+        }
+      }
+    }
   ],
   detail_address: [
     { required: true, message: '请输入详细地址', trigger: 'blur' }
@@ -410,6 +421,10 @@ const handleRegionChange = (value) => {
     addressForm.province = value[0]
     addressForm.city = value[1]
     addressForm.district = value[2]
+  } else {
+    addressForm.province = ''
+    addressForm.city = ''
+    addressForm.district = ''
   }
 }
 
@@ -428,6 +443,7 @@ const saveAddress = async () => {
       const method = isEdit.value ? 'put' : 'post'
       
       const response = await axios[method](url, {
+        customer_id: profileForm.id,
         receiver_name: addressForm.receiver_name,
         phone: addressForm.phone,
         province: addressForm.province,

@@ -74,13 +74,6 @@
             </el-timeline-item>
           </el-timeline>
 
-          <el-divider />
-
-          <div class="section-title">地图展示</div>
-          <div class="map-container">
-            <div id="map" class="map"></div>
-          </div>
-
           <div v-if="driverInfo" class="driver-section">
             <el-divider />
             <div class="section-title">司机信息</div>
@@ -337,10 +330,6 @@ const loadOrderDetail = async (orderId) => {
       if (orderDetail.value.status !== 'pending') {
         await loadDriverInfo(orderId)
       }
-
-      setTimeout(() => {
-        initMap()
-      }, 100)
     } else {
       ElMessage.error(response.data.msg || '获取订单详情失败')
     }
@@ -361,99 +350,6 @@ const loadDriverInfo = async (orderId) => {
     }
   } catch (err) {
     console.error('获取司机信息失败：', err)
-  }
-}
-
-const mapLoadError = ref(false)
-
-const initMap = () => {
-  if (!orderDetail.value) return
-
-  const mapElement = document.getElementById('map')
-  if (!mapElement) return
-
-  if (typeof T === 'undefined') {
-    mapLoadError.value = true
-    mapElement.innerHTML = `
-      <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; color: #666; padding: 20px;">
-        <div style="font-size: 48px; margin-bottom: 15px;">🗺️</div>
-        <div style="font-size: 16px; font-weight: 600; margin-bottom: 10px;">地图加载失败</div>
-        <div style="font-size: 14px; color: #999; text-align: center; max-width: 300px;">
-          天地图API Key未配置或网络连接失败<br>
-          请联系管理员配置地图服务
-        </div>
-      </div>
-    `
-    return
-  }
-
-  try {
-    const map = new T.Map('map')
-    map.centerAndZoom(new T.LngLat(116.404, 39.915), 5)
-
-    const senderCoord = orderDetail.value.sender_coord
-    const receiverCoord = orderDetail.value.receiver_coord
-
-    if (senderCoord && receiverCoord) {
-      const senderPoint = new T.LngLat(
-        parseFloat(senderCoord.split(',')[0]),
-        parseFloat(senderCoord.split(',')[1])
-      )
-      const receiverPoint = new T.LngLat(
-        parseFloat(receiverCoord.split(',')[0]),
-        parseFloat(receiverCoord.split(',')[1])
-      )
-
-      const senderMarker = new T.Marker(senderPoint, {
-        title: '发货地'
-      })
-      const receiverMarker = new T.Marker(receiverPoint, {
-        title: '收货地'
-      })
-
-      map.addOverLay([senderMarker, receiverMarker])
-
-      const driving = new T.DrivingRoute(map, {
-        policy: 0
-      })
-
-      driving.search(senderPoint, receiverPoint, (result) => {
-        if (result.getStatus() === 0) {
-          const routes = result.getPlan(0).getRoute(0)
-          const path = routes.getPath()
-          
-          const polyline = new T.Polyline(path, {
-            color: '#FF0000',
-            weight: 5,
-            opacity: 0.8
-          })
-          map.addOverLay(polyline)
-          map.setViewport([senderPoint, receiverPoint])
-        }
-      })
-    } else {
-      mapElement.innerHTML = `
-        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; color: #666; padding: 20px;">
-          <div style="font-size: 48px; margin-bottom: 15px;">📍</div>
-          <div style="font-size: 16px; font-weight: 600; margin-bottom: 10px;">暂无地图数据</div>
-          <div style="font-size: 14px; color: #999;">
-            订单地址坐标信息不完整
-          </div>
-        </div>
-      `
-    }
-  } catch (err) {
-    console.error('地图初始化失败：', err)
-    mapLoadError.value = true
-    mapElement.innerHTML = `
-      <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; color: #666; padding: 20px;">
-        <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
-        <div style="font-size: 16px; font-weight: 600; margin-bottom: 10px;">地图初始化失败</div>
-        <div style="font-size: 14px; color: #999;">
-          ${err.message || '未知错误'}
-        </div>
-      </div>
-    `
   }
 }
 
@@ -677,18 +573,6 @@ onUnmounted(() => {
 .timeline-desc {
   font-size: 14px;
   color: #909399;
-}
-
-.map-container {
-  padding: 20px;
-  background: rgba(102, 126, 234, 0.05);
-  border-radius: 8px;
-}
-
-.map {
-  width: 100%;
-  height: 900px;
-  border-radius: 8px;
 }
 
 .driver-section {

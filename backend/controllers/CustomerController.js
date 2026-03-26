@@ -274,9 +274,9 @@ class CustomerController {
 
   async getAddressList(req, res) {
     try {
-      const { customer_id } = req.params;
+      const { id } = req.params;
       
-      if (!customer_id) {
+      if (!id) {
         return res.json({
           code: 400,
           msg: '客户ID不能为空',
@@ -286,7 +286,7 @@ class CustomerController {
       
       const [addresses] = await db.query(
         'SELECT * FROM customer_addresses WHERE customer_id = ? ORDER BY is_default DESC, create_time DESC',
-        [customer_id]
+        [id]
       );
       
       res.json({
@@ -319,7 +319,7 @@ class CustomerController {
       let sql = `
         INSERT INTO customer_addresses (
           customer_id, receiver_name, phone, province, city, district, detail_address, is_default
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
       const params = [customer_id, receiver_name, phone, province, city, district, detail_address, is_default ? 1 : 0];
       

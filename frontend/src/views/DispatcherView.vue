@@ -38,55 +38,25 @@
       </el-col>
     </el-row>
 
-    <!-- 中间区域：地图 + 车辆状态 -->
+    <!-- 车辆状态和任务进度 -->
     <el-row :gutter="20" class="main-row">
-      <el-col :span="16">
-        <el-card class="map-card" shadow="hover">
+      <el-col :span="12">
+        <el-card class="status-card" shadow="hover">
           <template #header>
-            <div class="card-header">
-              <div class="header-left">
-                <div class="header-title-group">
-                  <span class="title-with-dot">实时运输轨迹监控</span>
-                </div>
-                <el-radio-group v-model="mapType" size="small">
-                  <el-radio-button label="all">全部</el-radio-button>
-                  <el-radio-button label="urgent">紧急</el-radio-button>
-                </el-radio-group>
-              </div>
-              <div class="header-right">
-                <el-input
-                  v-model="searchOrderNo"
-                  placeholder="请输入订单号"
-                  size="small"
-                  style="width: 200px;"
-                  clearable
-                  @clear="clearSearch"
-                >
-                  <template #prefix>
-                    <el-icon><Search /></el-icon>
-                  </template>
-                  <template #append>
-                    <el-button 
-                      :icon="Search" 
-                      @click="searchOrderByNo"
-                      :disabled="!searchOrderNo"
-                    />
-                  </template>
-                </el-input>
-              </div>
-            </div>
+            <span class="title-with-dot">车辆运力分布</span>
           </template>
-          <div class="chart-container map-container">
-            <AMapView 
-              :points="filteredTrackPoints"
-              :zoom="5"
-              :highlight-order="searchedOrder"
+          <div class="chart-container mini-chart">
+            <EchartsChart 
+              role="warehouse" 
+              title="" 
+              :xAxisData="vehicleStatusLabels"
+              :seriesData="vehicleStatusValues"
             />
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
-        <el-card class="progress-card" shadow="hover" style="height: 100%;">
+      <el-col :span="12">
+        <el-card class="progress-card" shadow="hover">
           <template #header>
             <span class="title-with-dot">今日任务进度</span>
           </template>
@@ -102,64 +72,96 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 底部区域：待分配运单 + 运输趋势 -->
+    <el-row :gutter="20">
+      <el-col :span="12">
+        <el-card shadow="hover" class="table-card">
+          <template #header>
+            <div class="card-header">
+              <span class="title-with-dot">待调度运单队列</span>
+              <el-button type="primary" link>查看全部</el-button>
+            </div>
+          </template>
+          <el-table :data="waitAllocateOrderList" border size="default" stripe>
+            <el-table-column prop="orderNo" label="订单号" width="150" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="area" label="配送区域"></el-table-column>
+            <el-table-column prop="goodsType" label="货物类型"></el-table-column>
+            <el-table-column prop="urgent" label="优先级" width="100">
+              <template #default="scope">
+                <el-tag :type="scope.row.urgent === '紧急' ? 'danger' : 'info'" effect="light">
+                  {{ scope.row.urgent }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="hover" class="chart-card">
+          <template #header>
+            <span class="title-with-dot">各时段运输压力分析</span>
+          </template>
+          <div class="chart-container">
+            <EchartsChart 
+              role="dispatcher" 
+              title="" 
+              :xAxisData="timeSlotXData"
+              :seriesData="timeSlotYData"
+            />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import EchartsChart from '../components/EchartsChart.vue'
-import AMapView from '../components/AMapView.vue'
 import { 
   ArrowUp, ArrowDown, Monitor, Refresh, 
-  Van, Timer, Warning, Search 
+  Van, Timer, List, Warning 
 } from '@element-plus/icons-vue'
 
 const currentDate = ref(new Date().toLocaleString())
 const loading = ref(false)
-const mapType = ref('all')
-const searchOrderNo = ref('')
-const searchedOrder = ref(null)
-
-const router = useRouter()
 
 // KPI 数据
-const todayTransportNum = ref('0')
-const todayTransportTrend = ref('0%')
-const unfinishedOrderNum = ref('0')
-const unfinishedOrderTrend = ref('0%')
-const avgDeliveryTime = ref('0h')
-const avgDeliveryTrend = ref('0%')
-const activeVehicles = ref('0')
+const todayTransportNum = ref('357')
+const todayTransportTrend = ref('12.3%')
+const unfinishedOrderNum = ref('28')
+const unfinishedOrderTrend = ref('8.7%')
+const avgDeliveryTime = ref('4.5h')
+const avgDeliveryTrend = ref('2.1%')
+const activeVehicles = ref('142')
 
 const kpiCards = computed(() => [
   { title: '今日运输单量', value: todayTransportNum.value, trend: todayTransportTrend.value, trendType: 'trend-up', icon: Van, iconColor: '#409EFF', bgColor: 'rgba(64, 158, 255, 0.1)' },
-  { title: '待调度运单', value: unfinishedOrderNum.value, trend: unfinishedOrderTrend.value, trendType: 'trend-down', icon: Monitor, iconColor: '#E6A23C', bgColor: 'rgba(230, 162, 60, 0.1)' },
+  { title: '待调度运单', value: unfinishedOrderNum.value, trend: unfinishedOrderTrend.value, trendType: 'trend-down', icon: List, iconColor: '#E6A23C', bgColor: 'rgba(230, 162, 60, 0.1)' },
   { title: '平均配送时效', value: avgDeliveryTime.value, trend: avgDeliveryTrend.value, trendType: 'trend-down', icon: Timer, iconColor: '#67C23A', bgColor: 'rgba(103, 194, 58, 0.1)' },
-  { title: '在途车辆数', value: activeVehicles.value, trend: '0%', trendType: 'trend-up', icon: Warning, iconColor: '#F56C6C', bgColor: 'rgba(245, 108, 108, 0.1)' },
+  { title: '在途车辆数', value: activeVehicles.value, trend: '5.4%', trendType: 'trend-up', icon: Warning, iconColor: '#F56C6C', bgColor: 'rgba(245, 108, 108, 0.1)' },
 ])
 
+// 图表数据
+const timeSlotXData = ref(['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'])
+const timeSlotYData = ref([45, 32, 120, 185, 156, 98])
+
+// 车辆状态数据
+const vehicleStatusLabels = ref(['空闲', '在途', '维修', '已分配'])
+const vehicleStatusValues = ref([85, 42, 8, 15])
+
 // 任务进度
-const taskProgress = ref([])
+const taskProgress = ref([
+  { name: '同城配送', percentage: 75, color: '#409EFF' },
+  { name: '跨省长途', percentage: 45, color: '#67C23A' },
+  { name: '冷链物流', percentage: 90, color: '#F56C6C' },
+  { name: '危险品运输', percentage: 60, color: '#E6A23C' }
+])
 
-// 模拟轨迹数据
-const trackPoints = ref([])
-
-const filteredTrackPoints = computed(() => {
-  let points = trackPoints.value
-  
-  if (mapType.value === 'urgent') {
-    points = points.filter(p => p.urgent)
-  }
-  
-  if (searchOrderNo.value) {
-    points = points.filter(p => p.orderNo.toLowerCase().includes(searchOrderNo.value.toLowerCase()))
-  }
-  
-  return points
-})
+const waitAllocateOrderList = ref([])
 
 const fetchDispatcherData = async () => {
   loading.value = true
@@ -173,138 +175,26 @@ const fetchDispatcherData = async () => {
       const data = res.data.data || {}
       
       if (data.core_indicators) {
-        todayTransportNum.value = data.core_indicators.today_transport_num || '0'
-        todayTransportTrend.value = data.core_indicators.today_transport_trend || '0%'
-        unfinishedOrderNum.value = data.core_indicators.unfinished_order_num || '0'
-        unfinishedOrderTrend.value = data.core_indicators.unfinished_order_trend || '0%'
-        avgDeliveryTime.value = data.core_indicators.avg_delivery_time || '0h'
-        avgDeliveryTrend.value = data.core_indicators.avg_delivery_trend || '0%'
+        todayTransportNum.value = data.core_indicators.today_transport_num || '357'
+        todayTransportTrend.value = data.core_indicators.today_transport_trend || '12.3%'
+        unfinishedOrderNum.value = data.core_indicators.unfinished_order_num || '28'
+        unfinishedOrderTrend.value = data.core_indicators.unfinished_order_trend || '8.7%'
+        avgDeliveryTime.value = data.core_indicators.avg_delivery_time || '4.5h'
+        avgDeliveryTrend.value = data.core_indicators.avg_delivery_trend || '2.1%'
       }
-      
-      if (data.active_vehicles) {
-        activeVehicles.value = data.active_vehicles
-      }
-      
-      if (data.task_progress && Array.isArray(data.task_progress)) {
-        taskProgress.value = data.task_progress
+
+      waitAllocateOrderList.value = Array.isArray(data.wait_allocate_order) ? data.wait_allocate_order : []
+
+      if (data.trend_data) {
+        timeSlotXData.value = data.trend_data.xAxis || timeSlotXData.value
+        timeSlotYData.value = data.trend_data.series || timeSlotYData.value
       }
     }
-    
-    await fetchOrderTrackData()
   } catch (err) {
     console.error('获取调度数据失败:', err)
-    await fetchOrderTrackData()
   } finally {
     loading.value = false
   }
-}
-
-const fetchOrderTrackData = async () => {
-  console.log('DispatcherView: 开始获取订单轨迹数据...')
-  try {
-    const res = await axios.get('http://localhost:5001/api/orders', {
-      params: { page: 1, size: 50 }
-    })
-    
-    console.log('DispatcherView: 订单API响应：', res.data)
-    
-    if (res.data && res.data.data && res.data.data.list) {
-      const orders = res.data.data.list
-      console.log('DispatcherView: 获取到订单数量：', orders.length)
-      
-      const filteredOrders = orders.filter(order => {
-        const isNotPending = order.status !== 'pending'
-        console.log(`订单 ${order.order_no}: 非pending=${isNotPending}`)
-        return isNotPending
-      })
-      
-      console.log('DispatcherView: 过滤后订单数量：', filteredOrders.length)
-      
-      trackPoints.value = filteredOrders.map(order => {
-        // 处理坐标格式：可能是字符串或数组
-        let fromCoord = null
-        let toCoord = null
-        
-        if (order.sender_coord) {
-          if (typeof order.sender_coord === 'string') {
-            const coords = order.sender_coord.split(',').map(Number)
-            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]) && coords[0] !== 0 && coords[1] !== 0) {
-              fromCoord = coords
-            }
-          } else if (Array.isArray(order.sender_coord) && order.sender_coord.length === 2) {
-            if (!isNaN(order.sender_coord[0]) && !isNaN(order.sender_coord[1]) && order.sender_coord[0] !== 0 && order.sender_coord[1] !== 0) {
-              fromCoord = order.sender_coord
-            }
-          }
-        }
-        
-        if (order.receiver_coord) {
-          if (typeof order.receiver_coord === 'string') {
-            const coords = order.receiver_coord.split(',').map(Number)
-            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]) && coords[0] !== 0 && coords[1] !== 0) {
-              toCoord = coords
-            }
-          } else if (Array.isArray(order.receiver_coord) && order.receiver_coord.length === 2) {
-            if (!isNaN(order.receiver_coord[0]) && !isNaN(order.receiver_coord[1]) && order.receiver_coord[0] !== 0 && order.receiver_coord[1] !== 0) {
-              toCoord = order.receiver_coord
-            }
-          }
-        }
-        
-        return {
-          from: order.sender_address ? order.sender_address.split('市')[0] + '市' : '未知',
-          to: order.receiver_address ? order.receiver_address.split('市')[0] + '市' : '未知',
-          fromCoord: fromCoord,
-          toCoord: toCoord,
-          pathCoords: [fromCoord, toCoord],
-          urgent: order.status === 'shipping',
-          orderNo: order.order_no,
-          customerName: order.customer_name,
-          goodsType: order.goods_type
-        }
-      }).filter(point => point.fromCoord && point.toCoord)
-      
-      console.log('DispatcherView: 地图轨迹数据已更新，共', trackPoints.value.length, '条轨迹')
-      console.log('DispatcherView: 轨迹数据：', trackPoints.value)
-    } else {
-      console.warn('DispatcherView: 订单数据格式不正确')
-    }
-  } catch (err) {
-    console.error('DispatcherView: 获取订单轨迹数据失败:', err)
-  }
-}
-
-const searchOrderByNo = () => {
-  if (!searchOrderNo.value) {
-    ElMessage.warning('请输入订单号')
-    return
-  }
-  
-  console.log('搜索订单号：', searchOrderNo.value)
-  console.log('当前trackPoints数量：', trackPoints.value.length)
-  console.log('当前trackPoints：', trackPoints.value.map(t => ({ orderNo: t.orderNo, hasCoords: !!(t.fromCoord && t.toCoord) })))
-  
-  // 支持模糊匹配和精确匹配
-  const found = trackPoints.value.find(t => 
-    t.orderNo.toLowerCase().includes(searchOrderNo.value.toLowerCase())
-  )
-  
-  console.log('搜索结果：', found)
-  
-  if (found) {
-    searchedOrder.value = found
-    ElMessage.success(`找到订单：${found.orderNo} (${found.from} -> ${found.to})`)
-    mapType.value = 'all'
-  } else {
-    ElMessage.warning('未找到该订单，请检查订单号是否正确')
-    searchedOrder.value = null
-  }
-}
-
-const clearSearch = () => {
-  searchOrderNo.value = ''
-  searchedOrder.value = null
-  console.log('已清空搜索')
 }
 
 onMounted(() => {
@@ -354,13 +244,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 20px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
 }
 
 .date-text {
@@ -442,10 +325,6 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
-.map-card {
-  height: 700px;
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -484,20 +363,16 @@ onMounted(() => {
 }
 
 .chart-container {
-  height: 100%;
-  width: 100%;
-  position: relative;
+  height: 250px;
 }
 
 .mini-chart {
-  height: 280px;
+  height: 200px;
 }
 
 .map-container {
-  height: 100%;
-  width: 100%;
+  height: 420px;
   cursor: pointer;
-  position: relative;
 }
 
 .map-container:hover {
@@ -506,32 +381,24 @@ onMounted(() => {
 
 /* 进度列表样式 */
 .progress-list {
-  padding: 20px 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
+  padding: 5px 0;
 }
 
 .progress-item {
-  margin-bottom: 30px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  margin-bottom: 12px;
 }
 
 .progress-info {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 15px;
-  font-size: 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
   color: #606266;
-  font-weight: 500;
 }
 
-.progress-item :deep(.el-progress) {
-  height: 30px;
+/* 表格卡片样式 */
+.table-card, .chart-card {
+  height: 320px;
 }
 
 :deep(.el-dialog__body) {

@@ -4,7 +4,7 @@
       <template #header>
         <div class="page-header">
           <h2>客户中心</h2>
-          <el-tag type="success">欢迎，{{ user?.real_name }}</el-tag>
+          <el-tag type="success">欢迎，{{ user?.customer_name }}</el-tag>
         </div>
       </template>
 
@@ -98,52 +98,6 @@
               :total="requestTotal"
               layout="total, prev, pager, next"
               @current-change="handleRequestQuery"
-            />
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="运输路线查询" name="routes">
-          <div class="search-bar">
-            <el-form :inline="true" :model="routeQueryParams">
-              <el-form-item label="订单号">
-                <el-input v-model="routeQueryParams.order_no" placeholder="输入订单号" clearable style="width: 200px" />
-              </el-form-item>
-              <el-form-item label="出发地">
-                <el-input v-model="routeQueryParams.sender_address" placeholder="输入出发地" clearable style="width: 200px" />
-              </el-form-item>
-              <el-form-item label="目的地">
-                <el-input v-model="routeQueryParams.receiver_address" placeholder="输入目的地" clearable style="width: 200px" />
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="handleRouteQuery">查询</el-button>
-                <el-button @click="resetRouteQuery">重置</el-button>
-              </el-form-item>
-            </el-form>
-          </div>
-          <el-table :data="routeList" border stripe v-loading="routeLoading">
-            <el-table-column prop="order_no" label="订单号" width="180" />
-            <el-table-column prop="sender_address" label="出发地" width="200" />
-            <el-table-column prop="receiver_address" label="目的地" width="200" />
-            <el-table-column prop="goods_type" label="货物类型" width="120" />
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="statusTypeMap[row.status]">{{ statusNameMap[row.status] }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="create_time" label="创建时间" width="180" />
-            <el-table-column label="操作" width="120" fixed="right">
-              <template #default="{ row }">
-                <el-button link type="primary" @click="handleRouteDetail(row)">查看路线</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="routeQueryParams.page"
-              :total="routeTotal"
-              layout="total, prev, pager, next"
-              @current-change="handleRouteQuery"
             />
           </div>
         </el-tab-pane>
@@ -285,49 +239,6 @@
         <el-button type="primary" @click="showRequestDetailDialog = false">关闭</el-button>
       </template>
     </el-dialog>
-
-    <el-dialog v-model="showRouteDetailDialog" title="运输路线详情" width="1000px">
-      <div v-if="currentRoute">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="订单号">{{ currentRoute.order_no }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="statusTypeMap[currentRoute.status]">{{ statusNameMap[currentRoute.status] }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="出发地">{{ currentRoute.sender_address }}</el-descriptions-item>
-          <el-descriptions-item label="目的地">{{ currentRoute.receiver_address }}</el-descriptions-item>
-          <el-descriptions-item label="货物类型">{{ currentRoute.goods_type }}</el-descriptions-item>
-          <el-descriptions-item label="重量">{{ currentRoute.weight }}kg</el-descriptions-item>
-          <el-descriptions-item label="金额">¥{{ currentRoute.amount }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatDate(currentRoute.create_time) }}</el-descriptions-item>
-        </el-descriptions>
-        
-        <div class="route-info" style="margin-top: 20px;">
-          <h4>路线地图</h4>
-          <div class="map-container" style="height: 500px; border: 1px solid #e6e6e6; border-radius: 4px;">
-            <AMapView 
-              v-if="showRouteDetailDialog"
-              :points="routePoints"
-              :center="mapCenter"
-              :zoom="5"
-            />
-          </div>
-          <div style="margin-top: 15px;">
-            <el-alert v-if="currentRoute.status === 'shipping'" type="success" :closable="false">
-              订单正在运输中，预计到达时间：2-3天
-            </el-alert>
-            <el-alert v-else-if="currentRoute.status === 'delivered'" type="success" :closable="false">
-              订单已送达
-            </el-alert>
-            <el-alert v-else type="info" :closable="false">
-              订单待分配车辆
-            </el-alert>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <el-button type="primary" @click="showRouteDetailDialog = false">关闭</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -336,7 +247,6 @@ import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useDataStore } from '../stores/dataStore'
-import AMapView from '../components/AMapView.vue'
 
 const API_BASE = 'http://localhost:5001/api'
 const store = useDataStore()
@@ -345,12 +255,10 @@ const user = computed(() => store.user)
 const loading = ref(false)
 const submitLoading = ref(false)
 const requestSubmitLoading = ref(false)
-const routeLoading = ref(false)
 const showAddDialog = ref(false)
 const showDetailDialog = ref(false)
 const showRequestDialog = ref(false)
 const showRequestDetailDialog = ref(false)
-const showRouteDetailDialog = ref(false)
 const orderList = ref([])
 const total = ref(0)
 const currentOrder = ref(null)
@@ -359,54 +267,7 @@ const requestFormRef = ref(null)
 const activeTab = ref('orders')
 
 const queryParams = reactive({ page: 1, size: 10, customer_name: '', order_no: '', status: '' })
-const routeQueryParams = reactive({ page: 1, size: 10, customer_name: '', order_no: '', sender_address: '', receiver_address: '' })
-const routeList = ref([])
-const routeTotal = ref(0)
-const currentRoute = ref(null)
-const routePoints = ref([])
-const mapCenter = ref([116.397428, 39.90923])
 
-const cityCoordMap = {
-  '北京': [116.397428, 39.90923],
-  '上海': [121.473701, 31.230416],
-  '广州': [113.264434, 23.129162],
-  '深圳': [114.085947, 22.547],
-  '杭州': [120.153576, 30.287459],
-  '南京': [118.767413, 32.041544],
-  '武汉': [114.305393, 30.593099],
-  '成都': [104.065735, 30.659462],
-  '重庆': [106.551556, 29.563009],
-  '西安': [108.948024, 34.263161],
-  '天津': [117.190182, 39.125596],
-  '苏州': [120.619585, 31.299379],
-  '郑州': [113.625368, 34.746599],
-  '长沙': [112.938814, 28.228209],
-  '沈阳': [123.429096, 41.796767],
-  '青岛': [120.38264, 36.067082],
-  '大连': [121.618622, 38.91459],
-  '厦门': [118.089425, 24.479833],
-  '福州': [119.306239, 26.074508],
-  '济南': [117.120128, 36.651039],
-  '石家庄': [114.51486, 38.042307],
-  '太原': [112.548879, 37.87059],
-  '合肥': [117.227239, 31.820587],
-  '南昌': [115.857972, 28.682894],
-  '南宁': [108.366098, 22.817221],
-  '昆明': [102.832891, 24.880095],
-  '贵阳': [106.630153, 26.647661],
-  '兰州': [103.834303, 36.06108],
-  '乌鲁木齐': [87.616848, 43.825592],
-  '拉萨': [91.117212, 29.646922],
-  '呼和浩特': [111.74918, 40.842585],
-  '哈尔滨': [126.534967, 45.803775],
-  '长春': [125.323544, 43.817072],
-  '海口': [110.199889, 20.017377],
-  '三亚': [109.511909, 18.252847],
-  '银川': [106.230909, 38.487193],
-  '西宁': [101.778228, 36.617144],
-  '襄阳': [112.144146, 32.009704],
-  '莫斯科': [37.617298, 55.755825]
-}
 const orderForm = reactive({ 
   sender_address: '', 
   receiver_address: '',
@@ -467,7 +328,7 @@ const handleTabChange = (tab) => {
 const handleQuery = async () => {
   loading.value = true
   try {
-    const res = await axios.get(`${API_BASE}/orders`, { params: { ...queryParams, customer_name: user.value?.real_name } })
+    const res = await axios.get(`${API_BASE}/orders`, { params: { ...queryParams, customer_name: user.value?.customer_name } })
     orderList.value = res.data.data.list
     total.value = res.data.data.total
   } catch (err) { ElMessage.error('获取订单列表失败') }
@@ -480,53 +341,6 @@ const resetQuery = () => {
   handleQuery()
 }
 
-const handleRouteQuery = async () => {
-  routeLoading.value = true
-  try {
-    const res = await axios.get(`${API_BASE}/orders`, { params: { ...routeQueryParams, customer_name: user.value?.real_name } })
-    routeList.value = res.data.data.list
-    routeTotal.value = res.data.data.total
-  } catch (err) { ElMessage.error('获取路线列表失败') }
-  routeLoading.value = false
-}
-
-const resetRouteQuery = () => {
-  routeQueryParams.order_no = ''
-  routeQueryParams.sender_address = ''
-  routeQueryParams.receiver_address = ''
-  handleRouteQuery()
-}
-
-const handleRouteDetail = (row) => {
-  currentRoute.value = row
-  
-  const fromCity = extractCity(row.sender_address)
-  const toCity = extractCity(row.receiver_address)
-  
-  const fromCoord = cityCoordMap[fromCity] || [116.397428, 39.90923]
-  const toCoord = cityCoordMap[toCity] || [121.473701, 31.230416]
-  
-  routePoints.value = [{
-    order_no: row.order_no,
-    fromCoord: fromCoord,
-    toCoord: toCoord,
-    status: row.status
-  }]
-  
-  mapCenter.value = [((fromCoord[0] + toCoord[0]) / 2), ((fromCoord[1] + toCoord[1]) / 2)]
-  
-  showRouteDetailDialog.value = true
-}
-
-const extractCity = (address) => {
-  for (const city in cityCoordMap) {
-    if (address.includes(city)) {
-      return city
-    }
-  }
-  return '北京'
-}
-
 const submitOrder = async () => {
   if (!orderFormRef.value) return
   
@@ -537,7 +351,8 @@ const submitOrder = async () => {
     try {
       const orderData = {
         ...orderForm,
-        customer_name: user.value?.real_name,
+        customer_id: user.value?.id,
+        customer_name: user.value?.customer_name,
         amount: parseFloat(totalAmount.value)
       }
       await axios.post(`${API_BASE}/orders`, orderData)
@@ -621,7 +436,7 @@ const priorityTypeMap = { high: 'danger', normal: 'warning', low: 'info' }
 const handleRequestQuery = async () => {
   requestLoading.value = true
   try {
-    const res = await axios.get(`${API_BASE}/service-requests`, { params: { ...requestQueryParams, customer_name: user.value?.real_name } })
+    const res = await axios.get(`${API_BASE}/service-requests`, { params: { ...requestQueryParams, customer_name: user.value?.customer_name } })
     requestList.value = res.data.data.list
     requestTotal.value = res.data.data.total
   } catch (err) { ElMessage.error('获取服务请求列表失败') }
