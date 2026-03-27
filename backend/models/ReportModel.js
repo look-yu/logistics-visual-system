@@ -644,6 +644,146 @@ class ReportModel {
       ];
     }
   }
+
+  static async getOrderStatusStats() {
+    try {
+      const sql = `
+        SELECT 
+          status,
+          COUNT(*) as count
+        FROM orders
+        GROUP BY status
+      `;
+      const [rows] = await db.query(sql);
+      
+      if (!rows || rows.length === 0) {
+        return {
+          xAxis: ['待处理', '已分配', '运输中', '已送达', '已签收', '异常', '已取消'],
+          series: [0, 0, 0, 0, 0, 0, 0]
+        };
+      }
+      
+      const statusMap = {
+        'pending': '待处理',
+        'assigned': '已分配',
+        'shipping': '运输中',
+        'delivered': '已送达',
+        'signed': '已签收',
+        'exception': '异常',
+        'cancelled': '已取消'
+      };
+      
+      const allStatuses = ['pending', 'assigned', 'shipping', 'delivered', 'signed', 'exception', 'cancelled'];
+      const statusCounts = allStatuses.map(status => {
+        const found = rows.find(row => row.status === status);
+        return found ? found.count : 0;
+      });
+      
+      return {
+        xAxis: allStatuses.map(s => statusMap[s]),
+        series: statusCounts
+      };
+    } catch (err) {
+      console.error('获取订单状态统计失败:', err);
+      return {
+        xAxis: ['待处理', '已分配', '运输中', '已送达', '已签收', '异常', '已取消'],
+        series: [0, 0, 0, 0, 0, 0, 0]
+      };
+    }
+  }
+
+  static async getCustomerGrowth() {
+    try {
+      const sql = `
+        SELECT 
+          DATE(create_time) as date,
+          COUNT(*) as order_count
+        FROM orders
+        GROUP BY DATE(create_time)
+        ORDER BY date ASC
+      `;
+      const [rows] = await db.query(sql);
+      
+      if (!rows || rows.length === 0) {
+        return {
+          xAxis: [],
+          series: []
+        };
+      }
+      
+      return {
+        xAxis: rows.map(row => {
+          if (!row.date) return '';
+          const date = new Date(row.date);
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${month}-${day}`;
+        }),
+        series: rows.map(row => row.order_count)
+      };
+    } catch (err) {
+      console.error('获取客户增长统计失败:', err);
+      return {
+        xAxis: [],
+        series: []
+      };
+    }
+  }
+
+  static async getProvinceOrderStats() {
+    try {
+      const sql = `
+        SELECT 
+          CASE 
+            WHEN receiver_address LIKE '%北京%' THEN '北京'
+            WHEN receiver_address LIKE '%上海%' THEN '上海'
+            WHEN receiver_address LIKE '%广东%' OR receiver_address LIKE '%广州%' OR receiver_address LIKE '%深圳%' THEN '广东'
+            WHEN receiver_address LIKE '%浙江%' OR receiver_address LIKE '%杭州%' OR receiver_address LIKE '%宁波%' THEN '浙江'
+            WHEN receiver_address LIKE '%江苏%' OR receiver_address LIKE '%南京%' OR receiver_address LIKE '%苏州%' THEN '江苏'
+            WHEN receiver_address LIKE '%山东%' OR receiver_address LIKE '%济南%' OR receiver_address LIKE '%青岛%' THEN '山东'
+            WHEN receiver_address LIKE '%四川%' OR receiver_address LIKE '%成都%' OR receiver_address LIKE '%重庆%' THEN '四川'
+            WHEN receiver_address LIKE '%湖北%' OR receiver_address LIKE '%武汉%' THEN '湖北'
+            WHEN receiver_address LIKE '%湖南%' OR receiver_address LIKE '%长沙%' THEN '湖南'
+            WHEN receiver_address LIKE '%河南%' OR receiver_address LIKE '%郑州%' THEN '河南'
+            WHEN receiver_address LIKE '%河北%' OR receiver_address LIKE '%石家庄%' THEN '河北'
+            WHEN receiver_address LIKE '%福建%' OR receiver_address LIKE '%厦门%' OR receiver_address LIKE '%福州%' THEN '福建'
+            WHEN receiver_address LIKE '%陕西%' OR receiver_address LIKE '%西安%' THEN '陕西'
+            WHEN receiver_address LIKE '%辽宁%' OR receiver_address LIKE '%沈阳%' OR receiver_address LIKE '%大连%' THEN '辽宁'
+            WHEN receiver_address LIKE '%安徽%' OR receiver_address LIKE '%合肥%' THEN '安徽'
+            WHEN receiver_address LIKE '%江西%' OR receiver_address LIKE '%南昌%' THEN '江西'
+            WHEN receiver_address LIKE '%天津%' THEN '天津'
+            WHEN receiver_address LIKE '%重庆%' THEN '重庆'
+            WHEN receiver_address LIKE '%黑龙江%' OR receiver_address LIKE '%哈尔滨%' THEN '黑龙江'
+            WHEN receiver_address LIKE '%吉林%' OR receiver_address LIKE '%长春%' THEN '吉林'
+            ELSE '其他'
+          END as province,
+          COUNT(*) as order_count
+        FROM orders
+        GROUP BY province
+        ORDER BY order_count DESC
+        LIMIT 10
+      `;
+      const [rows] = await db.query(sql);
+      
+      if (!rows || rows.length === 0) {
+        return {
+          xAxis: [],
+          series: []
+        };
+      }
+      
+      return {
+        xAxis: rows.map(row => row.province),
+        series: rows.map(row => row.order_count)
+      };
+    } catch (err) {
+      console.error('获取省份订单统计失败:', err);
+      return {
+        xAxis: [],
+        series: []
+      };
+    }
+  }
 }
 
 module.exports = ReportModel;

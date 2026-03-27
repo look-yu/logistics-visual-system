@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="header-left">
         <el-icon class="header-icon"><Monitor /></el-icon>
-        <h2>运输调度决策中心</h2>
+        <h2>订单数据分析中心</h2>
         <el-tag type="success" effect="dark" class="status-tag">实时监控中</el-tag>
       </div>
       <div class="header-right">
@@ -58,9 +58,61 @@
       </el-col>
     </el-row>
 
-    <!-- 底部区域：待分配运单 + 运输趋势 -->
+    <!-- 新增图表区域 -->
+    <el-row :gutter="20" class="chart-row">
+      <el-col :span="8">
+        <el-card shadow="hover" class="chart-card">
+          <template #header>
+            <span class="title-with-dot">订单状态分布</span>
+          </template>
+          <div class="chart-container">
+            <EchartsChart 
+              role="manager" 
+              chartType="bar" 
+              title="" 
+              :xAxisData="orderStatusXData"
+              :seriesData="orderStatusYData"
+            />
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover" class="chart-card">
+          <template #header>
+            <span class="title-with-dot">客户增长趋势</span>
+          </template>
+          <div class="chart-container">
+            <EchartsChart 
+              role="manager" 
+              chartType="line" 
+              title="" 
+              :xAxisData="customerGrowthXData"
+              :seriesData="customerGrowthYData"
+            />
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover" class="chart-card">
+          <template #header>
+            <span class="title-with-dot">省份订单分布</span>
+          </template>
+          <div class="chart-container">
+            <EchartsChart 
+              role="warehouse" 
+              chartType="pie" 
+              title="" 
+              :xAxisData="provinceOrderXData"
+              :seriesData="provinceOrderYData"
+            />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 底部区域：待分配运单 -->
     <el-row :gutter="20">
-      <el-col :span="12">
+      <el-col :span="24">
         <el-card shadow="hover" class="table-card">
           <template #header>
             <div class="card-header">
@@ -80,21 +132,6 @@
               </template>
             </el-table-column>
           </el-table>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="hover" class="chart-card">
-          <template #header>
-            <span class="title-with-dot">各时段运输压力分析</span>
-          </template>
-          <div class="chart-container">
-            <EchartsChart 
-              role="dispatcher" 
-              title="" 
-              :xAxisData="timeSlotXData"
-              :seriesData="timeSlotYData"
-            />
-          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -130,10 +167,6 @@ const kpiCards = computed(() => [
   { title: '在途车辆数', value: activeVehicles.value, trend: '5.4%', trendType: 'trend-up', icon: Warning, iconColor: '#F56C6C', bgColor: 'rgba(245, 108, 108, 0.1)' },
 ])
 
-// 图表数据
-const timeSlotXData = ref(['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'])
-const timeSlotYData = ref([45, 32, 120, 185, 156, 98])
-
 // 任务进度
 const taskProgress = ref([
   { name: '同城配送', percentage: 75, color: '#409EFF' },
@@ -141,6 +174,14 @@ const taskProgress = ref([
   { name: '冷链物流', percentage: 90, color: '#F56C6C' },
   { name: '危险品运输', percentage: 60, color: '#E6A23C' }
 ])
+
+// 新增图表数据
+const orderStatusXData = ref(['待处理', '已分配', '运输中', '已送达', '已签收', '异常', '已取消'])
+const orderStatusYData = ref([0, 0, 0, 0, 0, 0, 0])
+const customerGrowthXData = ref([])
+const customerGrowthYData = ref([])
+const provinceOrderXData = ref([])
+const provinceOrderYData = ref([])
 
 const waitAllocateOrderList = ref([])
 
@@ -166,9 +207,19 @@ const fetchDispatcherData = async () => {
 
       waitAllocateOrderList.value = Array.isArray(data.wait_allocate_order) ? data.wait_allocate_order : []
 
-      if (data.trend_data) {
-        timeSlotXData.value = data.trend_data.xAxis || timeSlotXData.value
-        timeSlotYData.value = data.trend_data.series || timeSlotYData.value
+      if (data.order_status_stats) {
+        orderStatusXData.value = data.order_status_stats.xAxis || orderStatusXData.value
+        orderStatusYData.value = data.order_status_stats.series || orderStatusYData.value
+      }
+
+      if (data.customer_growth) {
+        customerGrowthXData.value = data.customer_growth.xAxis || customerGrowthXData.value
+        customerGrowthYData.value = data.customer_growth.series || customerGrowthYData.value
+      }
+
+      if (data.province_order_stats) {
+        provinceOrderXData.value = data.province_order_stats.xAxis || provinceOrderXData.value
+        provinceOrderYData.value = data.province_order_stats.series || provinceOrderYData.value
       }
     }
   } catch (err) {

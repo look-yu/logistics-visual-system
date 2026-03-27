@@ -20,7 +20,7 @@
             </el-menu-item>
             <el-menu-item index="/dispatcher">
               <el-icon><Location /></el-icon>
-              <span>运输调度</span>
+              <span>分析中心</span>
             </el-menu-item>
             <el-menu-item index="/orders">
               <el-icon><Document /></el-icon>

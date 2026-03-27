@@ -154,6 +154,9 @@ router.get('/get_role_data', async (req, res) => {
       const waitAllocateOrders = await ReportModel.getWaitAllocateOrders();
       const activeVehicles = await ReportModel.getActiveVehicles();
       const taskProgress = await ReportModel.getTaskProgress();
+      const orderStatusStats = await ReportModel.getOrderStatusStats();
+      const customerGrowth = await ReportModel.getCustomerGrowth();
+      const provinceOrderStats = await ReportModel.getProvinceOrderStats();
       
       const data = {
         core_indicators: coreIndicators || {
@@ -166,7 +169,10 @@ router.get('/get_role_data', async (req, res) => {
         },
         wait_allocate_order: waitAllocateOrders.length > 0 ? waitAllocateOrders : [],
         active_vehicles: activeVehicles,
-        task_progress: taskProgress
+        task_progress: taskProgress,
+        order_status_stats: orderStatusStats,
+        customer_growth: customerGrowth,
+        province_order_stats: provinceOrderStats
       };
       return res.json({ code: 200, data, msg: "success" });
     }
