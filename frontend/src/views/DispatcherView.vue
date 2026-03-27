@@ -38,26 +38,6 @@
       </el-col>
     </el-row>
 
-    <!-- 今日任务进度 -->
-    <el-row :gutter="20" class="main-row">
-      <el-col :span="24">
-        <el-card class="progress-card" shadow="hover">
-          <template #header>
-            <span class="title-with-dot">今日任务进度</span>
-          </template>
-          <div class="progress-list">
-            <div v-for="item in taskProgress" :key="item.name" class="progress-item">
-              <div class="progress-info">
-                <span>{{ item.name }}</span>
-                <span>{{ item.percentage }}%</span>
-              </div>
-              <el-progress :percentage="item.percentage" :color="item.color" :show-text="false" />
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
     <!-- 新增图表区域 -->
     <el-row :gutter="20" class="chart-row">
       <el-col :span="8">
@@ -165,14 +145,6 @@ const kpiCards = computed(() => [
   { title: '待调度运单', value: unfinishedOrderNum.value, trend: unfinishedOrderTrend.value, trendType: 'trend-down', icon: List, iconColor: '#E6A23C', bgColor: 'rgba(230, 162, 60, 0.1)' },
   { title: '平均配送时效', value: avgDeliveryTime.value, trend: avgDeliveryTrend.value, trendType: 'trend-down', icon: Timer, iconColor: '#67C23A', bgColor: 'rgba(103, 194, 58, 0.1)' },
   { title: '在途车辆数', value: activeVehicles.value, trend: '5.4%', trendType: 'trend-up', icon: Warning, iconColor: '#F56C6C', bgColor: 'rgba(245, 108, 108, 0.1)' },
-])
-
-// 任务进度
-const taskProgress = ref([
-  { name: '同城配送', percentage: 75, color: '#409EFF' },
-  { name: '跨省长途', percentage: 45, color: '#67C23A' },
-  { name: '冷链物流', percentage: 90, color: '#F56C6C' },
-  { name: '危险品运输', percentage: 60, color: '#E6A23C' }
 ])
 
 // 新增图表数据

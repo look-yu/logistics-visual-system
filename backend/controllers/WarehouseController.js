@@ -34,7 +34,7 @@ class WarehouseController {
   async getWarehouseStats(req, res) {
     try {
       const stats = await StockModel.getWarehouseStats();
-      res.json({ code: 200, data: stats, msg: '获取统计数据成功' });
+      res.json(stats);
     } catch (error) {
       console.error('获取统计数据失败:', error);
       res.json({ code: 500, msg: '服务器内部错误' });

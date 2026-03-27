@@ -2,7 +2,7 @@
   <div class="manager-view">
     <div class="dashboard-header">
       <div class="left">
-        <h2 class="title">运营决策中心</h2>
+        <h2 class="title">平台监管中心</h2>
         <p class="subtitle">实时物流运营指标监控与决策分析</p>
       </div>
       <div class="right">
@@ -35,7 +35,7 @@
 
     <!-- 中间数据层：趋势分析 -->
     <el-row :gutter="20" class="chart-row">
-      <el-col :span="24">
+      <el-col :span="16">
         <el-card shadow="hover" class="main-chart-card">
           <template #header>
             <div class="card-header">
@@ -63,6 +63,22 @@
               :xAxisData="monthOrderXData"  
               :seriesData="monthOrderYData"
               :seriesName="trendSeriesName"
+            />
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover" class="chart-card">
+          <template #header>
+            <span class="card-title">业务类型分布</span>
+          </template>
+          <div class="chart-container">
+            <EchartsChart 
+              role="warehouse" 
+              chartType="pie" 
+              title="" 
+              :xAxisData="orderTypeXData"
+              :seriesData="orderTypeYData"
             />
           </div>
         </el-card>

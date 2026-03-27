@@ -16,19 +16,19 @@
           >
             <el-menu-item index="/manager">
               <el-icon><Monitor /></el-icon>
-              <span>决策中心</span>
+              <span>监管运行</span>
             </el-menu-item>
             <el-menu-item index="/dispatcher">
               <el-icon><Location /></el-icon>
               <span>分析中心</span>
             </el-menu-item>
-            <el-menu-item index="/orders">
-              <el-icon><Document /></el-icon>
-              <span>订单管理</span>
-            </el-menu-item>
             <el-menu-item index="/route-query">
               <el-icon><Location /></el-icon>
               <span>路线查询</span>
+            </el-menu-item>
+            <el-menu-item index="/orders">
+              <el-icon><Document /></el-icon>
+              <span>订单管理</span>
             </el-menu-item>
             <el-menu-item index="/customers">
               <el-icon><User /></el-icon>
@@ -37,10 +37,6 @@
             <el-menu-item index="/warehouse">
               <el-icon><Box /></el-icon>
               <span>仓储管理</span>
-            </el-menu-item>
-            <el-menu-item index="/reports">
-              <el-icon><PieChart /></el-icon>
-              <span>分析看板</span>
             </el-menu-item>
           </el-menu>
         </el-aside>
@@ -96,6 +92,9 @@ body { margin: 0; font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragin
 .app-wrapper { height: 100vh; display: flex; flex-direction: column; }
 .el-aside { background-color: #001529; color: #fff; transition: width 0.3s; }
 .logo { height: 60px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 18px; font-weight: bold; background: #002140; }
+.el-menu { border-right: none; }
+.el-menu-item { font-size: 16px; height: 60px; line-height: 60px; }
+.el-menu-item .el-icon { font-size: 18px; }
 .el-header { background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 1px 4px rgba(0,21,41,.08); height: 60px; }
 .header-left { font-size: 16px; font-weight: 500; }
 .user-info { display: flex; align-items: center; gap: 12px; }

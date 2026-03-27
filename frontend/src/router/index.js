@@ -3,7 +3,6 @@ import Login from '../views/Login.vue'
 import ManagerView from '../views/ManagerView.vue'
 import DispatcherView from '../views/DispatcherView.vue'
 import OrderManage from '../views/OrderManage.vue'
-import ReportDashboard from '../views/ReportDashboard.vue'
 import CustomerManage from '../views/CustomerManage.vue'
 import ServiceRequestManage from '../views/ServiceRequestManage.vue'
 import ShipmentPlanManage from '../views/ShipmentPlanManage.vue'
@@ -38,7 +37,6 @@ const routes = [
       { path: 'customers', name: 'Customers', component: CustomerManage, meta: { title: '客户管理' } },
       { path: 'service-requests', name: 'ServiceRequests', component: ServiceRequestManage, meta: { title: '服务请求管理' } },
       { path: 'shipment-plans', name: 'ShipmentPlans', component: ShipmentPlanManage, meta: { title: '装运计划管理' } },
-      { path: 'reports', name: 'Reports', component: ReportDashboard, meta: { title: '分析看板' } },
       { path: 'customer', name: 'Customer', component: CustomerView, meta: { title: '客户中心' } },
       { path: 'inbound-outbound', name: 'InboundOutbound', component: InboundOutboundManage, meta: { title: '出入库管理' } },
       { path: 'warehouse', name: 'Warehouse', component: WarehouseManage, meta: { title: '仓储管理' } }

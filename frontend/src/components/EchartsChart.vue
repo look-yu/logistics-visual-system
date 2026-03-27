@@ -120,11 +120,33 @@ const updateChart = (chartInstance) => {
 
   let option = {}
   
-  // 管理层：折线图（增加无数据兜底）
+  // 管理层：折线图或柱状图（增加无数据兜底）
   if (props.role === 'manager') {
     if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
       option = noDataOption
+    } else if (props.chartType === 'bar') {
+      // 柱状图（支持多系列）
+      const series = Array.isArray(props.seriesData) 
+        ? (props.seriesData[0] && typeof props.seriesData[0] === 'object' ? props.seriesData : [{ name: '数据', type: 'bar', data: props.seriesData }])
+        : [{ name: '数据', type: 'bar', data: [] }]
+      
+      option = {
+        title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
+        tooltip: { trigger: 'axis' },
+        legend: { data: series.map(s => s.name), bottom: 0 },
+        grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+        xAxis: { type: 'category', data: props.xAxisData, axisLabel: { color: '#666' } },
+        yAxis: { type: 'value', axisLabel: { color: '#666' } },
+        series: series.map((s, i) => ({
+          name: s.name || `系列${i+1}`,
+          type: 'bar',
+          data: s.data || [],
+          itemStyle: { color: ['#1989fa', '#52c41a'][i % 2] },
+          barWidth: '60%'
+        }))
+      }
     } else {
+      // 折线图
       option = {
         title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
         tooltip: { trigger: 'axis' },
