@@ -354,8 +354,9 @@ class ReportModel {
     try {
       const sql = `
         SELECT 
-          COUNT(*) as today_transport_num,
+          SUM(CASE WHEN status = 'shipping' THEN 1 ELSE 0 END) as today_transport_num,
           SUM(CASE WHEN status IN ('pending', 'assigned') THEN 1 ELSE 0 END) as unfinished_order_num,
+          SUM(CASE WHEN status = 'shipping' THEN 1 ELSE 0 END) as active_vehicles_num,
           AVG(CASE WHEN status = 'delivered' 
               THEN TIMESTAMPDIFF(HOUR, create_time, update_time) 
               ELSE NULL END) as avg_delivery_hours
@@ -366,8 +367,9 @@ class ReportModel {
       
       const yesterdaySql = `
         SELECT 
-          COUNT(*) as yesterday_transport_num,
+          SUM(CASE WHEN status = 'shipping' THEN 1 ELSE 0 END) as yesterday_transport_num,
           SUM(CASE WHEN status IN ('pending', 'assigned') THEN 1 ELSE 0 END) as yesterday_unfinished_num,
+          SUM(CASE WHEN status = 'shipping' THEN 1 ELSE 0 END) as yesterday_active_vehicles_num,
           AVG(CASE WHEN status = 'delivered' 
               THEN TIMESTAMPDIFF(HOUR, create_time, update_time) 
               ELSE NULL END) as yesterday_avg_delivery_hours
@@ -391,6 +393,10 @@ class ReportModel {
       const yesterdayUnfinished = yesterday.yesterday_unfinished_num || 0;
       const unfinishedTrend = yesterdayUnfinished > 0 ? ((unfinishedNum - yesterdayUnfinished) / yesterdayUnfinished * 100).toFixed(1) + '%' : '0%';
       
+      const activeVehiclesNum = today.active_vehicles_num || 0;
+      const yesterdayActiveVehicles = yesterday.yesterday_active_vehicles_num || 0;
+      const activeVehiclesTrend = yesterdayActiveVehicles > 0 ? ((activeVehiclesNum - yesterdayActiveVehicles) / yesterdayActiveVehicles * 100).toFixed(1) + '%' : '0%';
+      
       const todayAvg = today.avg_delivery_hours || 4.5;
       const yesterdayAvg = yesterday.yesterday_avg_delivery_hours || 4.5;
       const avgTrend = yesterdayAvg > 0 ? ((todayAvg - yesterdayAvg) / yesterdayAvg * 100).toFixed(1) + '%' : '0%';
@@ -401,7 +407,9 @@ class ReportModel {
         unfinished_order_num: unfinishedNum.toString(),
         unfinished_order_trend: unfinishedTrend,
         avg_delivery_time: `${todayAvg.toFixed(1)}h`,
-        avg_delivery_trend: avgTrend
+        avg_delivery_trend: avgTrend,
+        active_vehicles_num: activeVehiclesNum.toString(),
+        active_vehicles_trend: activeVehiclesTrend
       };
     } catch (err) {
       console.error('获取调度员核心指标失败:', err);

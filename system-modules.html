@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>物流可视化系统 - 功能模块图</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f7fa; padding: 40px; font-family: "Microsoft YaHei", sans-serif; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 50px; font-size: 28px; }
+
+        .tree-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .node {
+            background: #fff;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 15px 30px;
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        .node:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .root-node {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            font-size: 20px;
+            padding: 20px 50px;
+            margin-bottom: 60px;
+        }
+
+        .level {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .level::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 30px;
+            background: #3498db;
+        }
+
+        .module-node {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: #fff;
+            border: none;
+            min-width: 180px;
+            font-size: 16px;
+        }
+
+        .sub-level {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .sub-level::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 30px;
+            background: #3498db;
+        }
+
+        .feature-node {
+            background: #fff;
+            border: 2px solid #27ae60;
+            color: #2c3e50;
+            font-size: 14px;
+            padding: 10px 20px;
+            margin-bottom: 10px;
+            min-width: 150px;
+        }
+
+        .horizontal-line {
+            position: absolute;
+            top: -30px;
+            height: 2px;
+            background: #3498db;
+        }
+
+        .connector {
+            position: absolute;
+            width: 2px;
+            height: 30px;
+            background: #3498db;
+            top: -30px;
+        }
+
+        .role-section {
+            margin-top: 80px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .role-title {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 22px;
+            margin-bottom: 40px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .role-container {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+        }
+
+        .role-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            min-width: 350px;
+        }
+
+        .role-header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .role-content {
+            list-style: none;
+        }
+
+        .role-content li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #555;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .role-content li:last-child {
+            border-bottom: none;
+        }
+
+        .role-content li:before {
+            content: "●";
+            position: absolute;
+            left: 5px;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>物流可视化系统 - 功能模块图</h1>
+
+    <div class="tree-container">
+        <div class="node root-node">🚚 物流可视化管理系统</div>
+
+        <div class="level">
+            <div class="sub-level">
+                <div class="node module-node">📋 订单管理</div>
+                <div class="node feature-node">订单查询</div>
+                <div class="node feature-node">订单详情</div>
+                <div class="node feature-node">状态更新</div>
+                <div class="node feature-node">订单签收</div>
+            </div>
+
+            <div class="sub-level">
+                <div class="node module-node">👥 客户管理</div>
+                <div class="node feature-node">客户注册</div>
+                <div class="node feature-node">客户登录</div>
+                <div class="node feature-node">信息查询</div>
+                <div class="node feature-node">订单历史</div>
+            </div>
+
+            <div class="sub-level">
+                <div class="node module-node">🚛 运输调度</div>
+                <div class="node feature-node">状态分布</div>
+                <div class="node feature-node">客户增长</div>
+                <div class="node feature-node">省份分布</div>
+                <div class="node feature-node">路线查询</div>
+            </div>
+
+            <div class="sub-level">
+                <div class="node module-node">📦 仓储管理</div>
+                <div class="node feature-node">库存总值</div>
+                <div class="node feature-node">出入库记录</div>
+                <div class="node feature-node">分类占比</div>
+                <div class="node feature-node">库位分布</div>
+            </div>
+
+            <div class="sub-level">
+                <div class="node module-node">🗺️ 路线查询</div>
+                <div class="node feature-node">订单路线</div>
+                <div class="node feature-node">地图展示</div>
+                <div class="node feature-node">距离估算</div>
+                <div class="node feature-node">时间估算</div>
+            </div>
+
+            <div class="sub-level">
+                <div class="node module-node">📊 装运计划</div>
+                <div class="node feature-node">计划创建</div>
+                <div class="node feature-node">计划查询</div>
+                <div class="node feature-node">计划详情</div>
+                <div class="node feature-node">成本计算</div>
+            </div>
+        </div>
+
+        <div class="role-section">
+            <div class="role-title">👤 用户角色与权限</div>
+            <div class="role-container">
+                <div class="role-box">
+                    <div class="role-header">🔐 管理员</div>
+                    <ul class="role-content">
+                        <li>系统登录与权限验证</li>
+                        <li>订单全流程管理</li>
+                        <li>客户信息管理</li>
+                        <li>运输调度监控</li>
+                        <li>仓储数据查看</li>
+                        <li>装运计划管理</li>
+                        <li>路线查询功能</li>
+                    </ul>
+                </div>
+
+                <div class="role-box">
+                    <div class="role-header">🛒 客户</div>
+                    <ul class="role-content">
+                        <li>账号注册与登录</li>
+                        <li>在线下单</li>
+                        <li>我的订单查询</li>
+                        <li>订单详情查看</li>
+                        <li>个人中心管理</li>
+                        <li>订单状态跟踪</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

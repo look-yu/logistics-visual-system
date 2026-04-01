@@ -7,20 +7,7 @@
             <el-form-item label="客户名称">
               <el-input v-model="queryParams.keyword" placeholder="输入名称或编号" clearable />
             </el-form-item>
-            <el-form-item label="客户类型">
-              <el-select v-model="queryParams.customer_type" placeholder="全部类型" clearable style="width: 150px">
-                <el-option label="普通客户" value="regular" />
-                <el-option label="VIP客户" value="vip" />
-                <el-option label="战略客户" value="strategic" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="状态">
-              <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 150px">
-                <el-option label="活跃" value="active" />
-                <el-option label="停用" value="inactive" />
-                <el-option label="冻结" value="blocked" />
-              </el-select>
-            </el-form-item>
+
             <el-form-item>
               <el-button type="primary" @click="handleQuery">查询</el-button>
             </el-form-item>
@@ -33,33 +20,8 @@
         <el-table-column prop="customer_name" label="客户名称" width="160" />
         <el-table-column prop="contact_person" label="联系人" width="110" />
         <el-table-column prop="contact_phone" label="联系电话" width="140" />
-        <el-table-column prop="contact_email" label="联系邮箱" width="200" show-overflow-tooltip />
-        <el-table-column prop="customer_type" label="客户类型" width="110">
-          <template #default="{ row }">
-            <el-tag :type="customerTypeTypeMap[row.customer_type]">{{ customerTypeNameMap[row.customer_type] }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="credit_rating" label="信用等级" width="100">
-          <template #default="{ row }">
-            <el-tag :type="creditRatingTypeMap[row.credit_rating]">{{ row.credit_rating }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="credit_limit" label="信用额度" width="130">
-          <template #default="{ row }">
-            ¥{{ Number(row.credit_limit).toFixed(2) }}
-          </template>
-        </el-table-column>
+        <el-table-column prop="contact_email" label="联系邮箱" show-overflow-tooltip />
         <el-table-column prop="total_orders" label="总订单数" width="100" />
-        <el-table-column prop="total_amount" label="总交易额" width="140">
-          <template #default="{ row }">
-            ¥{{ Number(row.total_amount).toFixed(2) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="statusTypeMap[row.status]">{{ statusNameMap[row.status] }}</el-tag>
-          </template>
-        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleDetail(row)">详情</el-button>
@@ -86,21 +48,8 @@
         <el-descriptions-item label="联系人">{{ currentCustomer.contact_person }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ currentCustomer.contact_phone }}</el-descriptions-item>
         <el-descriptions-item label="联系邮箱">{{ currentCustomer.contact_email || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="公司地址">{{ currentCustomer.company_address || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="客户类型">
-          <el-tag :type="customerTypeTypeMap[currentCustomer.customer_type]">{{ customerTypeNameMap[currentCustomer.customer_type] }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="信用等级">
-          <el-tag :type="creditRatingTypeMap[currentCustomer.credit_rating]">{{ currentCustomer.credit_rating }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="信用额度">¥{{ Number(currentCustomer.credit_limit).toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="总订单数">{{ currentCustomer.total_orders }}</el-descriptions-item>
-        <el-descriptions-item label="总交易额">¥{{ Number(currentCustomer.total_amount).toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="最后下单日期">{{ currentCustomer.last_order_date || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="statusTypeMap[currentCustomer.status]">{{ statusNameMap[currentCustomer.status] }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ currentCustomer.create_time }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ currentCustomer.remarks || '-' }}</el-descriptions-item>
       </el-descriptions>
 
@@ -109,19 +58,6 @@
         <el-table-column prop="order_no" label="订单编号" width="120" />
         <el-table-column prop="start_city" label="出发地" width="100" />
         <el-table-column prop="end_city" label="目的地" width="100" />
-        <el-table-column prop="status" label="状态" width="80">
-          <template #default="{ row }">
-            <el-tag size="small">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="150" />
-      </el-table>
-
-      <el-divider content-position="left">服务请求</el-divider>
-      <el-table :data="currentCustomer.recent_requests || []" border stripe size="small" max-height="200">
-        <el-table-column prop="request_no" label="请求编号" width="120" />
-        <el-table-column prop="request_title" label="标题" width="150" />
-        <el-table-column prop="request_type" label="类型" width="80" />
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
             <el-tag size="small">{{ row.status }}</el-tag>
@@ -150,42 +86,9 @@ const currentCustomer = ref(null)
 
 const queryParams = reactive({
   keyword: '',
-  customer_type: '',
-  status: '',
   page: 1,
   pageSize: 10
 })
-
-const customerTypeNameMap = {
-  regular: '普通客户',
-  vip: 'VIP客户',
-  strategic: '战略客户'
-}
-
-const customerTypeTypeMap = {
-  regular: '',
-  vip: 'warning',
-  strategic: 'danger'
-}
-
-const creditRatingTypeMap = {
-  A: 'success',
-  B: '',
-  C: 'warning',
-  D: 'danger'
-}
-
-const statusNameMap = {
-  active: '活跃',
-  inactive: '停用',
-  blocked: '冻结'
-}
-
-const statusTypeMap = {
-  active: 'success',
-  inactive: 'info',
-  blocked: 'danger'
-}
 
 const handleQuery = async () => {
   loading.value = true

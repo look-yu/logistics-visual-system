@@ -103,27 +103,12 @@ const initFullscreenChart = () => {
 const updateChart = (chartInstance) => {
   if (!chartInstance) return
 
-  // 通用无数据配置
-  const noDataOption = {
-    title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
-    graphic: [{
-      type: 'text',
-      left: 'center',
-      top: '50%',
-      style: {
-        text: '暂无数据',
-        fontSize: 16,
-        color: '#999'
-      }
-    }]
-  }
-
   let option = {}
   
-  // 管理层：折线图或柱状图（增加无数据兜底）
+  // 管理层：折线图或柱状图
   if (props.role === 'manager') {
     if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
-      option = noDataOption
+      return
     } else if (props.chartType === 'bar') {
       // 柱状图（支持多系列）
       const series = Array.isArray(props.seriesData) 
@@ -170,10 +155,10 @@ const updateChart = (chartInstance) => {
     }
   }
 
-  // 调度人员：柱状图（增加无数据兜底）
+  // 调度人员：柱状图
   if (props.role === 'dispatcher') {
     if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
-      option = noDataOption
+      return
     } else {
       option = {
         title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
@@ -192,10 +177,10 @@ const updateChart = (chartInstance) => {
     }
   }
 
-  // 仓储管理员：饼图（增加无数据兜底）
+  // 仓储管理员：饼图
   if (props.role === 'warehouse' && props.chartType === 'pie') {
     if (props.xAxisData.length === 0 || props.seriesData.length === 0) {
-      option = noDataOption
+      return
     } else {
       option = {
         title: { text: props.title, left: 'center', textStyle: { color: '#333' } },
@@ -245,10 +230,10 @@ const updateChart = (chartInstance) => {
     }
   }
 
-  // 仓储管理员：仪表盘（增加无数据兜底）
+  // 仓储管理员：仪表盘
   if (props.role === 'warehouse' && props.chartType === 'gauge') {
     if (!props.seriesData || props.seriesData.value === undefined) {
-      option = noDataOption
+      return
     } else {
       const data = props.seriesData.value !== undefined ? props.seriesData.value : props.seriesData
       option = {

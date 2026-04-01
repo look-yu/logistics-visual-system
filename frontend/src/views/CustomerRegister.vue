@@ -27,13 +27,11 @@
         <el-form-item>
           <el-button type="primary" @click="handleRegister" :loading="loading" style="width: 100%">注册</el-button>
         </el-form-item>
-
-        <el-form-item>
-          <div class="login-link">
-            已有账号？<el-link type="primary" @click="goToLogin">立即登录</el-link>
-          </div>
-        </el-form-item>
       </el-form>
+
+      <div class="login-link">
+        已有账号？<el-link type="primary" @click="goToLogin">立即登录</el-link>
+      </div>
     </el-card>
   </div>
 </template>
@@ -118,25 +116,26 @@ const goToLogin = () => {
 <style scoped>
 .register-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 0;
-  margin: 0;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
 .register-card {
   width: 100%;
-  min-height: 100vh;
-  border-radius: 0;
-  box-shadow: none;
+  max-width: 500px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: none;
 }
 
 .card-header {
   text-align: center;
-  padding: 40px 20px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 0;
+  padding: 20px 20px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px 12px 0 0;
 }
 
 .logo-section {
@@ -144,14 +143,14 @@ const goToLogin = () => {
   align-items: center;
   justify-content: center;
   gap: 15px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .logo-title {
   margin: 0;
   color: #fff;
   font-weight: 700;
-  font-size: 36px;
+  font-size: 28px;
   letter-spacing: 2px;
 }
 
@@ -159,18 +158,29 @@ const goToLogin = () => {
   margin: 0;
   color: #fff;
   font-weight: 600;
-  font-size: 28px;
+  font-size: 22px;
 }
 
 .login-link {
   text-align: center;
   width: 100%;
-  font-size: 16px;
-  color: #fff;
-  padding-bottom: 40px;
+  font-size: 14px;
+  color: #666;
+  padding: 20px 0 0;
+  margin-top: 10px;
 }
 
 .login-link .el-link {
   margin-left: 5px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 20px;
+}
+
+:deep(.el-button) {
+  height: 44px;
+  font-size: 16px;
+  font-weight: 500;
 }
 </style>

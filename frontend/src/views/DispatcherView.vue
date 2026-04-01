@@ -14,30 +14,6 @@
       </div>
     </div>
 
-    <!-- KPI 指标卡片 -->
-    <el-row :gutter="20" class="kpi-row">
-      <el-col :span="6" v-for="card in kpiCards" :key="card.title">
-        <el-card class="kpi-card" shadow="hover" :body-style="{ padding: '20px' }">
-          <div class="kpi-content">
-            <div class="kpi-info">
-              <div class="kpi-title">{{ card.title }}</div>
-              <div class="kpi-value">{{ card.value }}</div>
-              <div class="kpi-footer">
-                <span :class="['trend-tag', card.trendType]">
-                  <el-icon><component :is="card.trendType === 'trend-up' ? ArrowUp : ArrowDown" /></el-icon>
-                  {{ card.trend }}
-                </span>
-                <span class="trend-label">较昨日</span>
-              </div>
-            </div>
-            <div class="kpi-icon-wrapper" :style="{ backgroundColor: card.bgColor }">
-              <el-icon :style="{ color: card.iconColor }"><component :is="card.icon" /></el-icon>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
     <!-- 新增图表区域 -->
     <el-row :gutter="20" class="chart-row">
       <el-col :span="8">
@@ -119,33 +95,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import EchartsChart from '../components/EchartsChart.vue'
 import { 
-  ArrowUp, ArrowDown, Monitor, Refresh, 
-  Van, Timer, List, Warning 
+  ArrowUp, ArrowDown, Monitor, Refresh
 } from '@element-plus/icons-vue'
 
 const currentDate = ref(new Date().toLocaleString())
 const loading = ref(false)
-
-// KPI 数据
-const todayTransportNum = ref('357')
-const todayTransportTrend = ref('12.3%')
-const unfinishedOrderNum = ref('28')
-const unfinishedOrderTrend = ref('8.7%')
-const avgDeliveryTime = ref('4.5h')
-const avgDeliveryTrend = ref('2.1%')
-const activeVehicles = ref('142')
-
-const kpiCards = computed(() => [
-  { title: '今日运输单量', value: todayTransportNum.value, trend: todayTransportTrend.value, trendType: 'trend-up', icon: Van, iconColor: '#409EFF', bgColor: 'rgba(64, 158, 255, 0.1)' },
-  { title: '待调度运单', value: unfinishedOrderNum.value, trend: unfinishedOrderTrend.value, trendType: 'trend-down', icon: List, iconColor: '#E6A23C', bgColor: 'rgba(230, 162, 60, 0.1)' },
-  { title: '平均配送时效', value: avgDeliveryTime.value, trend: avgDeliveryTrend.value, trendType: 'trend-down', icon: Timer, iconColor: '#67C23A', bgColor: 'rgba(103, 194, 58, 0.1)' },
-  { title: '在途车辆数', value: activeVehicles.value, trend: '5.4%', trendType: 'trend-up', icon: Warning, iconColor: '#F56C6C', bgColor: 'rgba(245, 108, 108, 0.1)' },
-])
 
 // 新增图表数据
 const orderStatusXData = ref(['待处理', '已分配', '运输中', '已送达', '已签收', '异常', '已取消'])
@@ -168,15 +127,6 @@ const fetchDispatcherData = async () => {
     if (res.data && res.data.code === 200) {
       const data = res.data.data || {}
       
-      if (data.core_indicators) {
-        todayTransportNum.value = data.core_indicators.today_transport_num || '357'
-        todayTransportTrend.value = data.core_indicators.today_transport_trend || '12.3%'
-        unfinishedOrderNum.value = data.core_indicators.unfinished_order_num || '28'
-        unfinishedOrderTrend.value = data.core_indicators.unfinished_order_trend || '8.7%'
-        avgDeliveryTime.value = data.core_indicators.avg_delivery_time || '4.5h'
-        avgDeliveryTrend.value = data.core_indicators.avg_delivery_trend || '2.1%'
-      }
-
       waitAllocateOrderList.value = Array.isArray(data.wait_allocate_order) ? data.wait_allocate_order : []
 
       if (data.order_status_stats) {

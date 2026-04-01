@@ -9,9 +9,7 @@ const PriceController = require('../controllers/PriceController');
 const CustomerController = require('../controllers/CustomerController');
 const ServiceRequestController = require('../controllers/ServiceRequestController');
 const ShipmentPlanController = require('../controllers/ShipmentPlanController');
-const InboundOutboundController = require('../controllers/InboundOutboundController');
 const TransportQueueController = require('../controllers/TransportQueueController');
-const WarehouseController = require('../controllers/WarehouseController');
 const AuthController = require('../controllers/AuthController');
 
 // ========== 用户管理路由 ==========
@@ -75,29 +73,7 @@ router.post('/shipment-plans/:id/start', ShipmentPlanController.startShipmentPla
 router.post('/shipment-plans/:id/complete', ShipmentPlanController.completeShipmentPlan);
 router.get('/shipment-plans/stats', ShipmentPlanController.getShipmentPlanStats);
 
-// ========== 出入库管理路由 ==========
-router.get('/inbound-outbound', InboundOutboundController.getRecordList);
-router.get('/inbound-outbound/:id', InboundOutboundController.getRecordDetail);
-router.post('/inbound-outbound', InboundOutboundController.createRecord);
-router.put('/inbound-outbound/:id', InboundOutboundController.updateRecord);
-router.delete('/inbound-outbound/:id', InboundOutboundController.deleteRecord);
-router.get('/inbound-outbound/stats', InboundOutboundController.getStatistics);
-
 // ========== 运输队列路由 ==========
-router.get('/transport-queue', TransportQueueController.getQueueList);
-router.get('/transport-queue/:id', TransportQueueController.getQueueDetail);
-router.post('/transport-queue', TransportQueueController.createQueue);
-router.put('/transport-queue/:id', TransportQueueController.updateQueue);
-router.delete('/transport-queue/:id', TransportQueueController.deleteQueue);
-router.get('/transport-queue/stats', TransportQueueController.getStatistics);
-
-// ========== 仓储管理路由 ==========
-router.get('/warehouse/stock', WarehouseController.getWarehouseData);
-router.post('/warehouse/inout', WarehouseController.submitInOutStock);
-router.post('/warehouse/replenish', WarehouseController.replenishStock);
-router.get('/warehouse/stats', WarehouseController.getWarehouseStats);
-
-// ========== 报表统计路由 ==========
 router.get('/reports/dashboard', ReportController.getDashboardData);
 router.get('/reports/order-trend', ReportController.getOrderTrend);
 

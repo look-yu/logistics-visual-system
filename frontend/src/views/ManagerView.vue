@@ -2,7 +2,7 @@
   <div class="manager-view">
     <div class="dashboard-header">
       <div class="left">
-        <h2 class="title">平台监管中心</h2>
+        <h2 class="title">平台仓储管理</h2>
         <p class="subtitle">实时物流运营指标监控与决策分析</p>
       </div>
       <div class="right">
@@ -13,7 +13,7 @@
 
     <!-- 核心KPI指标行 -->
     <el-row :gutter="20" class="kpi-row">
-      <el-col :span="6" v-for="kpi in kpiCards" :key="kpi.title">
+      <el-col :span="12" v-for="kpi in kpiCards" :key="kpi.title">
         <el-card class="kpi-card" shadow="hover" :body-style="{ padding: '20px' }">
           <div class="kpi-content">
             <div class="kpi-info">
