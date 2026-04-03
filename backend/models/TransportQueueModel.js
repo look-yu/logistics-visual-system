@@ -63,7 +63,7 @@ class TransportQueueModel {
     const {
       queue_no,
       order_no,
-      priority = 'normal',
+      priority,
       status = 'waiting',
       goods_name,
       goods_type,
@@ -78,6 +78,21 @@ class TransportQueueModel {
       estimated_arrival_time
     } = queueData;
 
+    // 根据货物类型自动设置优先级
+    let autoPriority = 'low';
+    if (goods_type === '生鲜食品') {
+      autoPriority = 'high';
+    } else if (goods_type === '贵重物品') {
+      autoPriority = 'normal';
+    } else if (goods_type === '危险品') {
+      throw new Error('危险品不受理');
+    } else if (['普通货物', '电子产品', '大件货物'].includes(goods_type)) {
+      autoPriority = 'low';
+    }
+
+    // 使用自动计算的优先级，如果用户没有手动指定
+    const finalPriority = priority || autoPriority;
+
     const sql = `
       INSERT INTO transport_queue 
       (queue_no, order_no, priority, status, goods_name, goods_type, quantity, weight, volume, sender_address, receiver_address, driver_id, driver_name, vehicle_no, estimated_arrival_time) 
@@ -86,7 +101,7 @@ class TransportQueueModel {
     const [result] = await db.query(sql, [
       queue_no,
       order_no,
-      priority,
+      finalPriority,
       status,
       goods_name,
       goods_type,

@@ -74,38 +74,12 @@
             </el-timeline-item>
           </el-timeline>
 
-          <div v-if="driverInfo" class="driver-section">
-            <el-divider />
-            <div class="section-title">司机信息</div>
-            <el-card class="driver-card">
-              <div class="driver-info">
-                <el-avatar :size="60" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-                <div class="driver-details">
-                  <div class="driver-name">{{ driverInfo.driver_name }}</div>
-                  <div class="driver-phone">
-                    <el-icon><Phone /></el-icon>
-                    {{ driverInfo.driver_phone }}
-                  </div>
-                  <div class="vehicle-info">
-                    <el-icon><Van /></el-icon>
-                    {{ driverInfo.car_no }}
-                  </div>
-                </div>
-              </div>
-            </el-card>
-          </div>
+
 
           <el-divider />
 
           <div class="actions-section">
             <el-button @click="goBack">返回列表</el-button>
-            <el-button
-              v-if="orderDetail.status === 'pending'"
-              type="danger"
-              @click="showCancelDialog"
-            >
-              取消订单
-            </el-button>
             <el-button
               v-if="orderDetail.status === 'delivered'"
               type="primary"
@@ -118,38 +92,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="cancelDialogVisible" title="取消订单" width="500px">
-      <el-alert
-        title="取消订单需要支付违约金"
-        type="warning"
-        :closable="false"
-        show-icon
-      >
-        <template #default>
-          <div class="penalty-info">
-            <p>运输金额：¥{{ orderDetail?.amount }}</p>
-            <p>违约金（2倍）：¥{{ penaltyAmount }}</p>
-            <p class="total-penalty">总计：¥{{ totalPenalty }}</p>
-          </div>
-        </template>
-      </el-alert>
-      <el-form :model="cancelForm" label-width="80px" style="margin-top: 20px">
-        <el-form-item label="取消原因">
-          <el-input
-            v-model="cancelForm.reason"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入取消原因"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="cancelDialogVisible = false">取消</el-button>
-        <el-button type="danger" @click="confirmCancel" :loading="cancelling">
-          确认取消
-        </el-button>
-      </template>
-    </el-dialog>
+
 
     <el-dialog v-model="signDialogVisible" title="确认签收" width="500px">
       <el-form :model="signForm" label-width="80px">
@@ -186,27 +129,12 @@ const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const orderDetail = ref(null)
-const driverInfo = ref(null)
-const cancelDialogVisible = ref(false)
 const signDialogVisible = ref(false)
-const cancelling = ref(false)
 const signing = ref(false)
-
-const cancelForm = reactive({
-  reason: ''
-})
 
 const signForm = reactive({
   signer: '',
   remark: ''
-})
-
-const penaltyAmount = computed(() => {
-  return orderDetail.value ? (orderDetail.value.amount * 2).toFixed(2) : '0.00'
-})
-
-const totalPenalty = computed(() => {
-  return orderDetail.value ? (parseFloat(orderDetail.value.amount) + parseFloat(penaltyAmount.value)).toFixed(2) : '0.00'
 })
 
 const timelineData = computed(() => {
@@ -326,10 +254,6 @@ const loadOrderDetail = async (orderId) => {
 
     if (response.data.code === 200) {
       orderDetail.value = response.data.data
-      
-      if (orderDetail.value.status !== 'pending') {
-        await loadDriverInfo(orderId)
-      }
     } else {
       ElMessage.error(response.data.msg || '获取订单详情失败')
     }
@@ -341,49 +265,9 @@ const loadOrderDetail = async (orderId) => {
   }
 }
 
-const loadDriverInfo = async (orderId) => {
-  try {
-    const response = await axios.get(`http://localhost:5001/api/orders/${orderId}/driver`)
 
-    if (response.data.code === 200) {
-      driverInfo.value = response.data.data
-    }
-  } catch (err) {
-    console.error('获取司机信息失败：', err)
-  }
-}
 
-const showCancelDialog = () => {
-  cancelDialogVisible.value = true
-}
 
-const confirmCancel = async () => {
-  if (!cancelForm.reason) {
-    ElMessage.warning('请输入取消原因')
-    return
-  }
-
-  cancelling.value = true
-  try {
-    const response = await axios.put(`http://localhost:5001/api/orders/${orderDetail.value.id}/cancel`, {
-      reason: cancelForm.reason,
-      penalty: totalPenalty.value
-    })
-
-    if (response.data.code === 200) {
-      ElMessage.success('订单已取消')
-      cancelDialogVisible.value = false
-      router.push('/my-orders')
-    } else {
-      ElMessage.error(response.data.msg || '取消订单失败')
-    }
-  } catch (err) {
-    console.error('取消订单失败：', err)
-    ElMessage.error('网络错误，请检查后端服务')
-  } finally {
-    cancelling.value = false
-  }
-}
 
 const showSignDialog = () => {
   signDialogVisible.value = true

@@ -7,19 +7,11 @@
             <div class="filter-bar">
               <el-form :inline="true" :model="queryParams">
                 <el-form-item label="订单号">
-                  <el-input v-model="queryParams.order_no" placeholder="输入订单号" clearable />
-                </el-form-item>
-                <el-form-item label="状态">
-                  <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 150px">
-                    <el-option label="待处理" value="pending" />
-                    <el-option label="已分配" value="assigned" />
-                    <el-option label="运输中" value="shipping" />
-                    <el-option label="已送达" value="delivered" />
-                    <el-option label="已签收" value="signed" />
-                  </el-select>
+                  <el-input v-model="queryParams.order_no" placeholder="输入订单号查询" clearable style="width: 250px" />
                 </el-form-item>
                 <el-form-item>
-                  <el-button type="primary" @click="handleQuery">查询</el-button>
+                  <el-button type="primary" @click="handleSearchByOrderNo">查询</el-button>
+                  <el-button @click="handleReset">重置</el-button>
                 </el-form-item>
               </el-form>
             </div>
@@ -130,6 +122,7 @@ const showSignDialog = ref(false)
 const orderList = ref([])
 const total = ref(0)
 const currentOrder = ref(null)
+const activeTab = ref('orders')
 
 const queryParams = reactive({ page:1, size: 10, order_no: '', status: '' })
 const statusForm = reactive({ id: '', order_no: '', status: '', reason: '' })
@@ -146,6 +139,33 @@ const handleQuery = async () => {
     total.value = res.data.data.total
   } catch (err) { ElMessage.error('获取订单列表失败') }
   loading.value = false
+}
+
+const handleSearchByOrderNo = async () => {
+  loading.value = true
+  try {
+    const res = await axios.get(`${API_BASE}/orders`, { 
+      params: { 
+        order_no: queryParams.order_no || undefined, 
+        page: 1, 
+        size: 10 
+      }
+    })
+    orderList.value = res.data.data.list
+    total.value = res.data.data.total
+    if (queryParams.order_no && res.data.data.list.length === 0) {
+      ElMessage.info('未找到该订单号')
+    }
+  } catch (err) { 
+    ElMessage.error('查询订单失败')
+  }
+  loading.value = false
+}
+
+const handleReset = () => {
+  queryParams.order_no = ''
+  queryParams.status = ''
+  handleSearchByOrderNo()
 }
 
 const handleDetail = async (row) => {

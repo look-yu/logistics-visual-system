@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物流可视化系统架构图</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.4.0/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        .mermaid {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>物流可视化系统架构图</h1>
+        
+        <div class="mermaid">
+            graph TD
+                subgraph 前端层
+                    A[Vue 3] --> B[Element Plus]
+                    A --> C[ECharts]
+                    A --> D[Axios]
+                    A --> E[Vue Router]
+                    F[Web 浏览器] --> A
+                end
+                
+                subgraph 后端层
+                    G[Node.js] --> H[Express]
+                    H --> I[路由管理]
+                    H --> J[控制器]
+                    H --> K[中间件]
+                    J --> L[订单控制器]
+                    J --> M[客户控制器]
+                    J --> N[装运计划控制器]
+                    J --> O[运输调度控制器]
+                    J --> P[价格控制器]
+                    J --> Q[报表控制器]
+                end
+                
+                subgraph 数据层
+                    R[MySQL] --> S[数据库连接]
+                    S --> T[数据模型]
+                    T --> U[订单模型]
+                    T --> V[客户模型]
+                    T --> W[装运计划模型]
+                    T --> X[价格模型]
+                    T --> Y[用户模型]
+                end
+                
+                subgraph 外部服务
+                    Z[高德地图 API]
+                end
+                
+                A -->|HTTP 请求| H
+                H -->|数据操作| S
+                A -->|地理位置服务| Z
+                L -->|调用| U
+                M -->|调用| V
+                N -->|调用| W
+                P -->|调用| X
+                Q -->|调用| T
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                nodeSpacing: 30,
+                rankSpacing: 60
+            }
+        });
+    </script>
+</body>
+</html>

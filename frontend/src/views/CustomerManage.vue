@@ -47,7 +47,6 @@
         <el-descriptions-item label="客户名称">{{ currentCustomer.customer_name }}</el-descriptions-item>
         <el-descriptions-item label="联系人">{{ currentCustomer.contact_person }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ currentCustomer.contact_phone }}</el-descriptions-item>
-        <el-descriptions-item label="联系邮箱">{{ currentCustomer.contact_email || '-' }}</el-descriptions-item>
         <el-descriptions-item label="总订单数">{{ currentCustomer.total_orders }}</el-descriptions-item>
         <el-descriptions-item label="最后下单日期">{{ currentCustomer.last_order_date || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ currentCustomer.remarks || '-' }}</el-descriptions-item>

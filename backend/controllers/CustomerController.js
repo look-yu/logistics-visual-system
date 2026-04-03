@@ -27,9 +27,32 @@ class CustomerController {
       
       const [customers] = await db.query(sql, params);
       
-      const total = customers.length;
+      // 计算每个客户的总订单数（排除取消的订单）
+      const customersWithStats = await Promise.all(
+        customers.map(async (customer) => {
+          // 计算总订单数（排除取消的订单）
+          const [orderCount] = await db.query(
+            'SELECT COUNT(*) as count FROM orders WHERE customer_id = ? AND status != ?',
+            [customer.id, 'cancelled']
+          );
+          
+          // 计算最后下单日期
+          const [lastOrder] = await db.query(
+            'SELECT MAX(create_time) as last_order_date FROM orders WHERE customer_id = ? AND status != ?',
+            [customer.id, 'cancelled']
+          );
+          
+          return {
+            ...customer,
+            total_orders: orderCount[0].count || 0,
+            last_order_date: lastOrder[0].last_order_date || null
+          };
+        })
+      );
+      
+      const total = customersWithStats.length;
       const start = (page - 1) * pageSize;
-      const paginatedCustomers = customers.slice(start, start + parseInt(pageSize));
+      const paginatedCustomers = customersWithStats.slice(start, start + parseInt(pageSize));
       
       res.json({
         code: 200,
@@ -67,9 +90,21 @@ class CustomerController {
       
       const customer = customers[0];
       
+      // 计算总订单数（排除取消的订单）
+      const [orderCount] = await db.query(
+        'SELECT COUNT(*) as count FROM orders WHERE customer_id = ? AND status != ?',
+        [id, 'cancelled']
+      );
+      
+      // 计算最后下单日期
+      const [lastOrder] = await db.query(
+        'SELECT MAX(create_time) as last_order_date FROM orders WHERE customer_id = ? AND status != ?',
+        [id, 'cancelled']
+      );
+      
       const [orders] = await db.query(
-        'SELECT * FROM orders WHERE customer_id = ? ORDER BY create_time DESC LIMIT 10',
-        [id]
+        'SELECT * FROM orders WHERE customer_id = ? AND status != ? ORDER BY create_time DESC LIMIT 10',
+        [id, 'cancelled']
       );
       
       const [requests] = await db.query(
@@ -82,6 +117,8 @@ class CustomerController {
         msg: 'success',
         data: {
           ...customer,
+          total_orders: orderCount[0].count || 0,
+          last_order_date: lastOrder[0].last_order_date || null,
           recent_orders: orders,
           recent_requests: requests
         }

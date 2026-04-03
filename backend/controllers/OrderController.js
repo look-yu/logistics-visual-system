@@ -138,7 +138,56 @@ class OrderController {
         return res.json({ code: 400, msg: '参数不完整' });
       }
 
+      const order = await OrderModel.findById(id);
+      if (!order) {
+        return res.json({ code: 404, msg: '订单不存在' });
+      }
+
       await OrderModel.updateStatus(id, status, reason);
+
+      // 自动管理transport_queue
+      const TransportQueueModel = require('../models/TransportQueueModel');
+      
+      if (status === 'assigned') {
+        // 订单被分配时，添加到待调度队列
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+        const queueNo = `TQ${yy}${mm}${dd}${random}`;
+
+        try {
+          await TransportQueueModel.create({
+            queue_no: queueNo,
+            order_no: order.order_no,
+            status: 'waiting',
+            goods_name: order.goods_type,
+            goods_type: order.goods_type,
+            quantity: 1,
+            weight: order.weight,
+            volume: order.volume,
+            sender_address: order.sender_address,
+            receiver_address: order.receiver_address
+          });
+        } catch (err) {
+          console.error('添加到运输队列失败:', err.message);
+        }
+      } else if (status === 'shipping') {
+        // 订单开始运输时，从待调度队列中移除或更新状态
+        try {
+          const [queues] = await db.query(
+            'SELECT id FROM transport_queue WHERE order_no = ?',
+            [order.order_no]
+          );
+          if (queues.length > 0) {
+            await TransportQueueModel.update(queues[0].id, { status: 'transporting' });
+          }
+        } catch (err) {
+          console.error('更新运输队列状态失败:', err.message);
+        }
+      }
+
       res.json({ code: 200, msg: `订单状态已更新为：${status}` });
     } catch (err) {
       console.error('更新订单状态失败：', err);

@@ -11,8 +11,8 @@
 
         .er-container {
             position: relative;
-            width: 1400px;
-            height: 900px;
+            width: 1200px;
+            height: 700px;
             margin: 0 auto;
             background: #fff;
             border-radius: 12px;
@@ -143,7 +143,7 @@
 </head>
 <body>
     <h1>物流可视化系统 ER 图</h1>
-    <p class="subtitle">logistics_db &mdash; 数据库关系模型</p>
+    <p class="subtitle">logistics_db &mdash; 数据库关系模型（简化版）</p>
 
     <div class="er-container">
         <svg>
@@ -159,21 +159,13 @@
             <line x1="800" y1="150" x2="500" y2="250" class="relation-line" />
             <text x="640" y="190" class="relation-text">逻辑关联</text>
 
-            <!-- orders -> transport_tasks -->
-            <line x1="450" y1="450" x2="300" y2="550" class="relation-line" />
-            <text x="360" y="490" class="relation-text">1:N</text>
-
             <!-- orders -> shipment_plans -->
-            <line x1="450" y1="450" x2="600" y2="550" class="relation-line" />
-            <text x="500" y="490" class="relation-text">1:N</text>
-
-            <!-- vehicles -> transport_tasks -->
-            <line x1="200" y1="650" x2="300" y2="650" class="relation-line" />
-            <text x="230" y="640" class="relation-text">1:N</text>
+            <line x1="450" y1="450" x2="350" y2="550" class="relation-line" />
+            <text x="380" y="490" class="relation-text">1:N</text>
 
             <!-- customers -> shipment_plans -->
-            <line x1="550" y1="150" x2="650" y2="550" class="relation-line" />
-            <text x="580" y="350" class="relation-text">1:N</text>
+            <line x1="550" y1="150" x2="450" y2="550" class="relation-line" />
+            <text x="480" y="350" class="relation-text">1:N</text>
         </svg>
 
         <!-- users -->
@@ -242,25 +234,8 @@
             </ul>
         </div>
 
-        <!-- transport_tasks -->
-        <div class="table-box" style="left: 200px; top: 550px;">
-            <div class="table-header">transport_tasks（运输任务表）</div>
-            <ul class="field-list">
-                <li class="field-item pk"><span class="field-key">PK</span><span class="field-name">id</span><span class="field-type">int</span></li>
-                <li class="field-item"><span class="field-key">UK</span><span class="field-name">task_no</span><span class="field-type">varchar</span></li>
-                <li class="field-item fk"><span class="field-key">FK</span><span class="field-name">order_id</span><span class="field-type">int</span></li>
-                <li class="field-item fk"><span class="field-key">FK</span><span class="field-name">vehicle_id</span><span class="field-type">int</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">route_plan</span><span class="field-type">json</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">start_time</span><span class="field-type">datetime</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">end_time</span><span class="field-type">datetime</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">cost</span><span class="field-type">decimal</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">status</span><span class="field-type">enum</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">create_time</span><span class="field-type">timestamp</span></li>
-            </ul>
-        </div>
-
         <!-- shipment_plans -->
-        <div class="table-box" style="left: 550px; top: 550px;">
+        <div class="table-box" style="left: 300px; top: 550px;">
             <div class="table-header teal">shipment_plans（装运计划表）</div>
             <ul class="field-list">
                 <li class="field-item pk"><span class="field-key">PK</span><span class="field-name">id</span><span class="field-type">int</span></li>
@@ -268,6 +243,7 @@
                 <li class="field-item"><span class="field-key"></span><span class="field-name">plan_name</span><span class="field-type">varchar</span></li>
                 <li class="field-item fk"><span class="field-key">FK</span><span class="field-name">customer_id</span><span class="field-type">int</span></li>
                 <li class="field-item fk"><span class="field-key">FK</span><span class="field-name">order_id</span><span class="field-type">int</span></li>
+                <li class="field-item"><span class="field-key"></span><span class="field-name">status</span><span class="field-type">enum</span></li>
                 <li class="field-item"><span class="field-key"></span><span class="field-name">goods_type</span><span class="field-type">varchar</span></li>
                 <li class="field-item"><span class="field-key"></span><span class="field-name">goods_name</span><span class="field-type">varchar</span></li>
                 <li class="field-item"><span class="field-key"></span><span class="field-name">goods_quantity</span><span class="field-type">int</span></li>
@@ -278,22 +254,13 @@
                 <li class="field-item"><span class="field-key"></span><span class="field-name">pickup_date</span><span class="field-type">date</span></li>
                 <li class="field-item"><span class="field-key"></span><span class="field-name">delivery_date</span><span class="field-type">date</span></li>
                 <li class="field-item"><span class="field-key"></span><span class="field-name">transport_mode</span><span class="field-type">varchar</span></li>
+                <li class="field-item"><span class="field-key"></span><span class="field-name">vehicle_type</span><span class="field-type">varchar</span></li>
+                <li class="field-item"><span class="field-key"></span><span class="field-name">driver_id</span><span class="field-type">int</span></li>
                 <li class="field-item"><span class="field-key"></span><span class="field-name">estimated_cost</span><span class="field-type">decimal</span></li>
-            </ul>
-        </div>
-
-        <!-- vehicles -->
-        <div class="table-box" style="left: 50px; top: 600px;">
-            <div class="table-header orange">vehicles（车辆表）</div>
-            <ul class="field-list">
-                <li class="field-item pk"><span class="field-key">PK</span><span class="field-name">id</span><span class="field-type">int</span></li>
-                <li class="field-item"><span class="field-key">UK</span><span class="field-name">car_no</span><span class="field-type">varchar</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">driver_name</span><span class="field-type">varchar</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">driver_phone</span><span class="field-type">varchar</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">status</span><span class="field-type">enum</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">current_area</span><span class="field-type">varchar</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">load_capacity</span><span class="field-type">decimal</span></li>
-                <li class="field-item"><span class="field-key"></span><span class="field-name">create_time</span><span class="field-type">timestamp</span></li>
+                <li class="field-item"><span class="field-key"></span><span class="field-name">actual_cost</span><span class="field-type">decimal</span></li>
+                <li class="field-item"><span class="field-key"></span><span class="field-name">progress</span><span class="field-type">int</span></li>
+                <li class="field-item"><span class="field-key"></span><span class="field-name">special_requirements</span><span class="field-type">text</span></li>
+                <li class="field-item"><span class="field-key"></span><span class="field-name">remarks</span><span class="field-type">text</span></li>
             </ul>
         </div>
 

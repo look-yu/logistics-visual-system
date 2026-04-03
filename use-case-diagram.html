@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物流可视化系统用例图</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.4.0/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        .mermaid {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>物流可视化系统用例图</h1>
+        
+        <div class="mermaid">
+            graph TD
+                subgraph 系统用户
+                    A[管理员]
+                    B[客户]
+                end
+                
+                subgraph 核心功能
+                    C[客户管理]
+                    D[订单管理]
+                    E[装运计划]
+                    F[运输调度]
+                    G[价格管理]
+                    H[报表分析]
+                end
+                
+                subgraph 具体用例
+                    C1[添加客户]
+                    C2[编辑客户]
+                    C3[删除客户]
+                    C4[查看客户列表]
+                    
+                    D1[创建订单]
+                    D2[查询订单]
+                    D3[更新订单状态]
+                    D4[查看订单详情]
+                    D5[签收订单]
+                    D6[取消订单]
+                    
+                    E1[创建计划]
+                    E2[管理计划]
+                    E3[更新计划状态]
+                    E4[查看计划详情]
+                    
+                    F1[查看运输队列]
+                    F2[分配车辆]
+                    F3[规划路线]
+                    F4[跟踪运输]
+                    
+                    G1[配置价格]
+                    G2[计算运费]
+                    
+                    H1[订单统计]
+                    H2[客户统计]
+                    H3[运输统计]
+                end
+                
+                A --> C
+                A --> D
+                A --> E
+                A --> F
+                A --> G
+                A --> H
+                B --> D
+                
+                C --> C1
+                C --> C2
+                C --> C3
+                C --> C4
+                
+                D --> D1
+                D --> D2
+                D --> D3
+                D --> D4
+                D --> D5
+                D --> D6
+                
+                E --> E1
+                E --> E2
+                E --> E3
+                E --> E4
+                
+                F --> F1
+                F --> F2
+                F --> F3
+                F --> F4
+                
+                G --> G1
+                G --> G2
+                
+                H --> H1
+                H --> H2
+                H --> H3
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                nodeSpacing: 20,
+                rankSpacing: 80
+            }
+        });
+    </script>
+</body>
+</html>
